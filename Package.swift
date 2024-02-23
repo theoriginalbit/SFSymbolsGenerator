@@ -11,6 +11,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser.git", .upToNextMajor(from: "1.3.0")),
+        .package(url: "https://github.com/apple/swift-syntax.git", exact: "509.1.1"),
     ],
     targets: [
         .executableTarget(
@@ -18,11 +19,21 @@ let package = Package(
             dependencies: [
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ],
-            swiftSettings: .packageSettings
+            swiftSettings: .packageSettings,
+            plugins: [
+                .plugin(name: "GitStatusPlugin"),
+            ]
         ),
         .testTarget(name: "SFSymbolsGeneratorTests", dependencies: [
             "SFSymbolsGenerator",
-            .product(name: "Testing", package: "swift-testing"),
+        ]),
+
+        .plugin(name: "GitStatusPlugin", capability: .buildTool, dependencies: [
+            .target(name: "GitStatus"),
+        ]),
+        .executableTarget(name: "GitStatus", dependencies: [
+            .product(name: "SwiftSyntax", package: "swift-syntax"),
+            .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
         ]),
     ]
 )

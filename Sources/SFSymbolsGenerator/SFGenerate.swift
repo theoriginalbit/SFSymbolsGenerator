@@ -15,6 +15,9 @@ struct SFGenerate: ParsableCommand {
         abstract: "A tool to generate a type-safe SFSymbolsResource definition for use in apps."
     )
 
+    @OptionGroup
+    var versionOptions: VersionOptions
+
     mutating func run() throws {
     }
 }
