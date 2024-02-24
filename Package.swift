@@ -14,12 +14,16 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-syntax.git", exact: "509.1.1"),
         .package(url: "https://github.com/apple/swift-testing.git", exact: "0.4.2"),
         .package(url: "https://github.com/theoriginalbit/GitVersionPlugin.git", exact: "1.0.0"),
+        .package(url: "https://github.com/JohnSundell/Files.git", exact: "4.2.0"),
     ],
     targets: [
         .executableTarget(
             name: "SFSymbolsGenerator",
             dependencies: [
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
+                .product(name: "SwiftSyntax", package: "swift-syntax"),
+                .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
+                .product(name: "Files", package: "Files"),
             ],
             swiftSettings: .packageSettings,
             plugins: [

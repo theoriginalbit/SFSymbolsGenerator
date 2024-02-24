@@ -19,5 +19,7 @@ struct SFGenerate: ParsableCommand {
     var versionOptions: VersionOptions
 
     mutating func run() throws {
+        let frontend = try GenerateFrontend()
+        try frontend.run()
     }
 }
