@@ -1,6 +1,15 @@
 {
   "pins" : [
     {
+      "identity" : "gitversionplugin",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/theoriginalbit/GitVersionPlugin.git",
+      "state" : {
+        "revision" : "9b598bcfe36b3e0b6c983a2ce2813ba9d68c7bf0",
+        "version" : "1.0.0"
+      }
+    },
+    {
       "identity" : "swift-argument-parser",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-argument-parser.git",
