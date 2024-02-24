@@ -18,8 +18,12 @@ struct SFGenerate: ParsableCommand {
     @OptionGroup
     var versionOptions: VersionOptions
 
+    @Flag
+    var exportLocalizations: LocalizationFlag?
+
     mutating func run() throws {
-        let frontend = try GenerateFrontend()
+        let options = LocalizationOptionTransformer.transform(exportLocalizations)
+        let frontend = try GenerateFrontend(exportLocalizationOptions: options)
         try frontend.run()
     }
 }
