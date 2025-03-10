@@ -1,6 +1,6 @@
 //
 //  VersionOptions.swift
-//
+//  SFSymbolsGenerator
 //
 //  Created by Joshua Asbury on 24/2/2024.
 //
@@ -30,7 +30,7 @@ struct VersionOptions: ParsableArguments {
         // The variable `_toolVersion` is generated at compile-time by the
         // GitStatus plugin. If the plugin was unable to gather tag or commit
         // information from Git, it produces a nil value.
-        _toolVersion ?? "unknown"
+        "unknown"
         #endif
     }
 }

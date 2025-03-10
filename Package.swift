@@ -1,4 +1,4 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 6.0
 import PackageDescription
 
 let package = Package(
@@ -10,40 +10,23 @@ let package = Package(
         .executable(name: "sfgenerate", targets: ["SFSymbolsGenerator"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-argument-parser.git", .upToNextMajor(from: "1.3.0")),
-        .package(url: "https://github.com/apple/swift-syntax.git", exact: "509.1.1"),
-        .package(url: "https://github.com/apple/swift-testing.git", exact: "0.4.2"),
-        .package(url: "https://github.com/theoriginalbit/GitVersionPlugin.git", exact: "1.0.0"),
-        .package(url: "https://github.com/JohnSundell/Files.git", exact: "4.2.0"),
+        .package(url: "https://github.com/apple/swift-argument-parser", exact: "1.5.0"),
+        .package(url: "https://github.com/JohnSundell/Files", exact: "4.2.0"),
     ],
     targets: [
         .executableTarget(
             name: "SFSymbolsGenerator",
             dependencies: [
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
-                .product(name: "SwiftSyntax", package: "swift-syntax"),
-                .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
                 .product(name: "Files", package: "Files"),
             ],
-            swiftSettings: .packageSettings,
-            plugins: [
-                .plugin(name: "GitVersionPlugin", package: "GitVersionPlugin"),
-            ]
+            path: "Sources"
         ),
-        .testTarget(name: "SFSymbolsGeneratorTests", dependencies: [
-            "SFSymbolsGenerator",
-            .product(name: "Testing", package: "swift-testing"),
-        ]),
+        
+        .testTarget(
+            name: "SFSymbolsGeneratorTests",
+            dependencies: ["SFSymbolsGenerator"],
+            path: "Tests"
+        ),
     ]
 )
-
-extension [PackageDescription.SwiftSetting] {
-    /// Settings intended to be applied to every Swift target in this package.
-    /// Analogous to project-level build settings in an Xcode project.
-    static var packageSettings: Self {
-        [
-            .enableUpcomingFeature("ExistentialAny"),
-            .define("SWT_TARGET_OS_APPLE", .when(platforms: [.macOS])),
-        ]
-    }
-}

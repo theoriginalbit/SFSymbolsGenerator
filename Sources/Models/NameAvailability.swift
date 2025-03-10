@@ -1,6 +1,6 @@
 //
 //  NameAvailability.swift
-//
+//  SFSymbolsGenerator
 //
 //  Created by Joshua Asbury on 24/2/2024.
 //
