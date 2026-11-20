@@ -29,7 +29,7 @@ extension CodeGenerator {
 		}
 
 		func frameWorkConvenienceFile(_ uiFramework: UIFramework, for category: SFSymbolMetadata.Category) -> URL {
-			context.outputDirectory.appending(component: "SFSymbolResource+\(category)+\(uiFramework).generated.swift")
+			context.outputDirectory.appending(component: "SFSymbolResource+\(category)+\(uiFramework.rawValue).generated.swift")
 		}
 
 		// MARK: Diagnostics conveniences
