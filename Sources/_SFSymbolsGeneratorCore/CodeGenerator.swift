@@ -6,6 +6,9 @@ import Foundation
 import SwiftStructureKit
 
 package struct CodeGenerator {
+	private static let resourceStructName = "SFSymbolResource"
+	private static let systemNameProperty = "systemName"
+
 	package init() {}
 
 	package func run(with context: Context<some DiagnosticCollector>) throws {
@@ -18,17 +21,20 @@ package struct CodeGenerator {
 			withIntermediateDirectories: true,
 		)
 
-		let filePathProvider = FileOutputPathProvider(outputDirectory: context.outputDirectory)
+		let context = SymbolContext(context: context, metadata: metadata)
 
-		try generateSFSymbolResourceFile(atPath: filePathProvider.symbolResourceFile(), with: context)
-
-		var files = 0
+		// counters for a nice little message at the end
+		var files = 1
 		var total = 0
-		for (_, symbols) in metadata.allSymbolsByCategory {
+
+		try generateSFSymbolResourceFile(with: context)
+
+		for category in metadata.categories {
+			let symbolsCount = try generateSFSymbolFile(for: category, with: context)
 			files += 1
-			total += symbols.count
+			total += symbolsCount
 		}
-		print("Generated SF Symbols accessors for", total, "symbols, across", files * 2, "files")
+		print("Generated SF Symbols accessors for", total, "symbols, across", files, "files")
 
 		// Abort if any diagnostic errors were prevented complete generation
 		guard !context.diagnostics.hasErrors else {
@@ -36,46 +42,89 @@ package struct CodeGenerator {
 		}
 	}
 
-	func generateSFSymbolResourceFile(atPath path: URL, with context: Context<some DiagnosticCollector>) throws {
-		let resourceStructName = "SFSymbolResource"
-		let systemNameProperty = "systemName"
-		let file = SwiftFile(headerComment: fileHeader(for: path)) {
+	func generateSFSymbolResourceFile(
+		with context: SymbolContext<some DiagnosticCollector>,
+	) throws {
+		let output = context.symbolResourceFile()
+
+		let file = SwiftFile(headerComment: fileHeader(for: output)) {
 			StructDescriptor(
-				resourceStructName,
+				Self.resourceStructName,
 				comment: "An SF Symbol resource.",
 				accessModifier: context.accessModifier,
 				conformances: ["Hashable", .sendable]
 			) {
 				PropertyDescriptor.let(
-					systemNameProperty,
+					Self.systemNameProperty,
 					comment: "An SF Symbol system name.",
 					accessModifier: context.accessModifier,
 					type: .string
 				)
 
 				FunctionDescriptor.initializer(
-					comment: "Initialize a ``\(resourceStructName)`` with `\(systemNameProperty)`.",
+					comment: "Initialize a ``\(Self.resourceStructName)`` with `\(Self.systemNameProperty)`.",
 					// fileprivate would be ideal, but since we are splitting code generation over
 					// multiple files for compiler/previewing performance it must be internal
 					accessModifier: .internal,
 					parameters: [
-						Parameter("name", label: systemNameProperty, type: .string, comment: "The SF Symbol system name.")
+						Parameter("name", label: Self.systemNameProperty, type: .string, comment: "The SF Symbol system name.")
 					]
 				) {
-					StatementDescriptor.assignment(.selfMember(systemNameProperty), .identifier("name"))
+					StatementDescriptor.assignment(.selfMember(Self.systemNameProperty), .identifier("name"))
 				}
 			}
 		}
 
-		try renderIfChanged(file, to: path, with: context)
+		try renderIfChanged(file, to: output, with: context)
 	}
 
-	func renderIfChanged(_ file: SwiftFile, to outputURL: URL, with context: Context<some DiagnosticCollector>) throws {
+	func generateSFSymbolFile(
+		for category: SFSymbolMetadata.Category,
+		with context: SymbolContext<some DiagnosticCollector>,
+	) throws -> Int {
+		let output = context.categoryFile(for: category)
+		let symbols = context.metadata.symbols(in: category)
+
+		let file = SwiftFile(headerComment: fileHeader(for: output)) {
+			ExtensionDescriptor(.identifier(Self.resourceStructName), accessModifier: context.accessModifier) {
+				for symbol in symbols {
+					if let identifier = Identifier.camelCased(symbol.name)?.value {
+						PropertyDescriptor.computed(
+							identifier,
+							comment: propertyComment(for: symbol),
+							attributes: propertyAttributes(for: symbol),
+							isStatic: true,
+							type: .identifier(Self.resourceStructName)
+						) {
+							ExpressionDescriptor.functionCall(.identifier(Self.resourceStructName)) {
+								Argument(label: Self.systemNameProperty, value: .literal(.string(symbol.name)))
+							}
+						}
+					} else {
+						context.diagnostics.fault("internal error: could not generate valid identifier for symbol \(symbol.name)")
+					}
+				}
+			}
+		}
+
+		try renderIfChanged(file, to: output, with: context)
+		return symbols.count
+	}
+
+	func renderIfChanged(
+		_ file: SwiftFile,
+		to outputURL: URL,
+		with context: SymbolContext<some DiagnosticCollector>,
+	) throws {
 		let data = file.render(indentUsing: .spaces(4))
 		try renderIfChanged(data, to: outputURL, with: context)
 	}
 
-	func renderIfChanged(_ data: Data, to outputURL: URL, with context: Context<some DiagnosticCollector>) throws {
+	func renderIfChanged(
+		_ data: Data,
+		to outputURL: URL,
+		with context: SymbolContext<some DiagnosticCollector>,
+	) throws {
 		if let existingData = try? Data(contentsOf: outputURL), existingData == data {
 			// Content is identical, no write needed otherwise we would update the modified time
 			context.diagnostics.info("No changes needed to \(outputURL.path())")
@@ -92,5 +141,66 @@ package struct CodeGenerator {
 		Auto-generated by SFSymbolsGenerator.
 		DO NOT EDIT — changes will be overwritten on the next build.
 		"""
+	}
+
+	private func propertyComment(for symbol: SFSymbolMetadata.Symbol) -> DocCommentDescriptor {
+		guard let restriction = symbol.restriction else {
+			return #"The "\#(symbol.name)" SF Symbol."#
+		}
+		return """
+			The "\(symbol.name)" SF Symbol.
+
+			- Important: \(restriction)
+			"""
+	}
+
+	private func propertyAttributes(for symbol: SFSymbolMetadata.Symbol) -> [AttributeDescriptor] {
+		var result: [AttributeDescriptor] = []
+		if let attribute = availabilityAttribute(for: symbol) {
+			result.append(attribute)
+		}
+		if let attribute = deprecationAttribute(for: symbol) {
+			result.append(attribute)
+		}
+		return result
+	}
+
+	private func availabilityAttribute(for symbol: SFSymbolMetadata.Symbol) -> AttributeDescriptor? {
+		guard let iOS = platformVersion(\.iOS, from: symbol),
+		   let macOS = platformVersion(\.macOS, from: symbol),
+		   let watchOS = platformVersion(\.watchOS, from: symbol),
+		   let tvOS = platformVersion(\.tvOS, from: symbol),
+		   let visionOS = platformVersion(\.visionOS, from: symbol)
+		else { return nil }
+		return .available(
+			AvailabilityArgumentsList(
+				iOS: iOS,
+				macOS: macOS,
+				watchOS: watchOS,
+				tvOS: tvOS,
+				visionOS: visionOS
+			)
+		)
+	}
+
+	private func platformVersion(
+		_ keyPath: KeyPath<SFSymbolMetadata.Availability, String>,
+		from symbol: SFSymbolMetadata.Symbol
+	) -> PlatformVersion? {
+		guard let availability = symbol.availability?[keyPath: keyPath] else {
+			return nil
+		}
+		return PlatformVersion(parsing: availability)
+	}
+
+	private func deprecationAttribute(for symbol: SFSymbolMetadata.Symbol) -> AttributeDescriptor? {
+		guard let replacementName = symbol.replacementName else {
+			return nil
+		}
+		return .available(
+			.deprecated,
+			.renamed(replacementName),
+			.message("This name has been deprecated. You should use a more modern name if your app does not need to support older platforms.")
+		)
 	}
 }

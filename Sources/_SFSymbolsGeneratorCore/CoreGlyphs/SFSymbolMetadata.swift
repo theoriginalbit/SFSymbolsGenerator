@@ -11,7 +11,7 @@ struct SFSymbolMetadata: Sendable {
 		directoryHint: .isDirectory
 	)
 
-	let allSymbolsByCategory: [String: [Symbol]]
+	private let allSymbolsByCategory: [Category: [Symbol]]
 
 	let categories: [Category]
 
@@ -45,6 +45,10 @@ struct SFSymbolMetadata: Sendable {
 			categoryResolver.category(for: $0.name)
 		})
 		categories = categoryResolver.categories
+	}
+
+	func symbols(in category: Category) -> [Symbol] {
+		allSymbolsByCategory[category, default: []]
 	}
 
 	/// A set of all language codes, used to determine if the last segment of a symbol is a language code.
@@ -83,11 +87,11 @@ private struct CategoryResolver {
 		"variable",
 		"draw"
 	]
+	private static let uncategorized = SFSymbolMetadata.Category(key: "uncategorized")
 
 	let categories: [SFSymbolMetadata.Category]
-	let symbolCategories: [String: [String]]
-	let nameAliases: [String: String]
-	let rank: [String: Int]
+	private let nameAliases: [String: String]
+	private let categoryLookup: [String: SFSymbolMetadata.Category]
 
 	init(
 		resourceFolder resources: URL,
@@ -96,31 +100,37 @@ private struct CategoryResolver {
 		let allCategories = try readFile(in: resources, "categories.plist", to: [SFSymbolMetadata.Category].self)
 		let symbolCategories = try readFile(in: resources, "symbol_categories.plist", to: [String: [String]].self)
 
-		self.categories = allCategories.lazy.filter { !Self.nonSubjectCategoryKeys.contains($0.key) }
-		self.symbolCategories = symbolCategories
-		self.nameAliases = nameAliases
+		let categories = allCategories.filter { !Self.nonSubjectCategoryKeys.contains($0.key) }
+		let lookup = Dictionary(uniqueKeysWithValues: categories.map { ($0.key, $0) })
 
 		var sizes: [String: Int] = [:]
 		for key in symbolCategories.values.joined() {
 			sizes[key, default: 0] += 1
 		}
-		let ranked = categories.enumerated()
-			.sorted { (sizes[$0.element.key] ?? 0, $0.offset) < (sizes[$1.element.key] ?? 0, $1.offset) }
-		self.rank = Dictionary(uniqueKeysWithValues: ranked.enumerated().map { ($0.element.element.key, $0.offset) })
-	}
 
-	func category(for name: String) -> String {
-		return [name, nameAliases[name]].lazy
-			.compactMap(\.self)
-			.compactMap(directCategory(for:))
-			.first ?? "uncategorized"
-	}
+		// Fewest symbols first, then plist order
+		let rank: [String: Int] = Dictionary(
+			uniqueKeysWithValues: categories.enumerated()
+				.sorted { (sizes[$0.element.key] ?? 0, $0.offset) < (sizes[$1.element.key] ?? 0, $1.offset) }
+				.enumerated()
+				.map { ($0.element.element.key, $0.offset) }
+		)
 
-	private func directCategory(for name: String) -> String? {
-		guard let categories = symbolCategories[name] else {
-			return nil
+		self.categories = categories
+		self.nameAliases = nameAliases
+		self.categoryLookup = symbolCategories.compactMapValues { keys in
+			keys.compactMap { lookup[$0] }.min { rank[$0.key, default: .max] < rank[$1.key, default: .max] }
 		}
-		return categories.min(by: { rank[$0, default: .max] < rank[$1, default: .max] })
+	}
+
+	func category(for name: String) -> SFSymbolMetadata.Category {
+		if let category = categoryLookup[name] {
+			return category
+		}
+		if let alias = nameAliases[name], let category = categoryLookup[alias] {
+			return category
+		}
+		return Self.uncategorized
 	}
 }
 

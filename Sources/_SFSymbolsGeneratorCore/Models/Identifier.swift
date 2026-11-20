@@ -7,11 +7,6 @@ import Foundation
 /// Validated declaration name: `identifier | raw-identifier` per:
 /// [](https://docs.swift.org/latest/documentation/the-swift-programming-language/summaryofthegrammar/#Lexical-Structure)
 struct Identifier {
-	enum Role {
-		case typeName
-		case memberName
-	}
-
 	let value: String
 
 	init?(_ value: String) {
@@ -19,25 +14,28 @@ struct Identifier {
 		self.value = value
 	}
 
-	/// Validates if the identifier conforms to a naming convention
-	///
-	/// ### Conventions
-	/// - Types: UpperCamelCase
-	/// - Members: lowerCamelCase.
-	///
-	/// - Note: Raw identifiers will always return `true`.
-	func followsNamingConvention(_ role: Role) -> Bool {
-		guard let first = value.unicodeScalars.first, first != "`" else { return true }
-		let isUpper = Character(first).isUppercase
-		return role == .typeName ? isUpper : !isUpper
-	}
+	static func camelCased(_ symbolName: String) -> Identifier? {
+		var identifier = ""
+		var capitalizeNext = false
 
-	static func camelCased(_ value: String) -> Identifier? {
-		if value.isEmpty { return nil }
-		let parts = value.lowercased().split(separator: "_")
-		guard let first = parts.first, !first.isEmpty else { return nil }
-		let result = String(first) + parts.dropFirst().map(\.capitalized).joined()
-		return Identifier(result)
+		for character in symbolName {
+			if character == "." {
+				// only capitalise the next word once something has been written, keeping the first word lowercase
+				capitalizeNext = !identifier.isEmpty
+			} else if character.isLetter || character.isNumber {
+				identifier += capitalizeNext ? character.uppercased() : String(character)
+				capitalizeNext = false
+			}
+			// any other character cannot appear in an identifier, so it is dropped
+		}
+
+		guard let first = identifier.first else {
+			return nil
+		}
+		if first.isNumber || keywords.contains(identifier) {
+			return Identifier("_" + identifier)
+		}
+		return Identifier(identifier)
 	}
 
 	static func isValid(_ value: String) -> Bool {

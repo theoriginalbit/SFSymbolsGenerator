@@ -1,5 +1,5 @@
 {
-  "originHash" : "5674c1e95a43d542ffa5a766bc23aaf7e484ee4ed48ee144a0bcbd559d9e156b",
+  "originHash" : "7f4308a7cbd365d7734aeafab34d3959186039d5ef7c87fbc251866a81cec26c",
   "pins" : [
     {
       "identity" : "swift-argument-parser",
@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/theoriginalbit/SwiftStructureKit",
       "state" : {
-        "revision" : "3f069b8f573a04f73a238e9729571136cbe8e9ce",
-        "version" : "4.1.0"
+        "branch" : "main",
+        "revision" : "628058d428e1760958002faa3f09d6147c662042"
       }
     }
   ],
