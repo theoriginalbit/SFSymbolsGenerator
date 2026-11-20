@@ -9,4 +9,11 @@ extension ArrayBuilder {
 	static func buildExpression(_ expression: ()) -> Result {
 		[]
 	}
+
+	static func buildExpression(_ expression: T?) -> Result {
+		if let expression {
+			return [expression]
+		}
+		return []
+	}
 }

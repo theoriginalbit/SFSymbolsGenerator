@@ -5,8 +5,8 @@
 import Foundation
 
 package enum UIFramework: String, Hashable, CaseIterable {
-	case uiKit = "UIKit"
 	case appKit = "AppKit"
+	case uiKit = "UIKit"
 	case swiftUI = "SwiftUI"
 
 	package static let allCasesAsList = UIFramework.allCases

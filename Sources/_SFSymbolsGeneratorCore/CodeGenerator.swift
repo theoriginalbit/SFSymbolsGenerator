@@ -75,6 +75,14 @@ package struct CodeGenerator {
 					StatementDescriptor.assignment(.selfMember(Self.systemNameProperty), .identifier("name"))
 				}
 			}
+
+			for framework in UIFramework.allCases {
+				switch framework {
+				case .appKit: appKitConvenienceInitExtension(with: context)
+				case .uiKit: uiKitConvenienceInitExtension(with: context)
+				case .swiftUI: swiftUIConvenienceInitExtension(with: context)
+				}
+			}
 		}
 
 		try renderIfChanged(file, to: output, with: context)
@@ -251,6 +259,94 @@ package struct CodeGenerator {
 	private func conditionalImport(for framework: UIFramework) -> TopLevelDeclarationDescriptor {
 		let conditionalImport = TopLevelCompilerConditionalIfDescriptor("canImport(\(framework.rawValue))") {
 			ImportDescriptor(framework.rawValue)
+		}
+		return .compilerControl(.conditional(.if(conditionalImport)))
+	}
+
+	func appKitConvenienceInitExtension(
+		with context: SymbolContext<some DiagnosticCollector>,
+	) -> TopLevelDeclarationDescriptor? {
+		guard context.uiFrameworks.contains(.appKit) else {
+			return nil
+		}
+		let attributes: [AttributeDescriptor] = [
+			.available(.platform(.macCatalyst), .unavailable)
+		]
+		let conditionalImport = TopLevelCompilerConditionalIfDescriptor("canImport(AppKit)") {
+			ImportDescriptor("AppKit")
+
+			ExtensionDescriptor(.identifier("AppKit.NSImage"), accessModifier: context.accessModifier, attributes: attributes) {
+				FunctionDescriptor.initializer(
+					comment: "Initialize an `NSImage` with an SF Symbol resource.",
+					convenience: true,
+					parameters: ParametersList {
+						Parameter("resource", label: "system", type: .identifier(Self.resourceStructName))
+						Parameter("accessibilityDescription", type: .optional(.string))
+					}) {
+						ExpressionDescriptor.functionCall("self.init") {
+							Argument(label: Self.systemNameProperty, value: .memberAccess("resource", Self.systemNameProperty))
+							Argument(label: "accessibilityDescription", value: .identifier("accessibilityDescription"))
+						}
+					}
+			}
+		}
+		return .compilerControl(.conditional(.if(conditionalImport)))
+	}
+
+	func uiKitConvenienceInitExtension(
+		with context: SymbolContext<some DiagnosticCollector>,
+	) -> TopLevelDeclarationDescriptor? {
+		guard context.uiFrameworks.contains(.uiKit) else {
+			return nil
+		}
+		let attributes: [AttributeDescriptor] = [
+			.available(.platform(.watchOS), .unavailable)
+		]
+		let conditionalImport = TopLevelCompilerConditionalIfDescriptor("canImport(UIKit)") {
+			ImportDescriptor("UIKit")
+
+			ExtensionDescriptor(.identifier("UIKit.UIImage"), accessModifier: context.accessModifier, attributes: attributes) {
+				FunctionDescriptor.initializer(
+					comment: "Initialize a `UIImage` with an SF Symbol resource.",
+					convenience: true,
+					parameters: ParametersList {
+						Parameter("resource", label: "system", type: .identifier(Self.resourceStructName))
+					}) {
+						StatementDescriptor.compilerControl(.conditional(
+							.if(.raw("!os(watchOS)")) {
+								ExpressionDescriptor.functionCall("self.init") {
+									Argument(label: Self.systemNameProperty, value: .memberAccess("resource", Self.systemNameProperty))
+								}
+							} else: {
+								ExpressionDescriptor.functionCall("self.init")
+							}
+						))
+					}
+			}
+		}
+		return .compilerControl(.conditional(.if(conditionalImport)))
+	}
+
+	func swiftUIConvenienceInitExtension(
+		with context: SymbolContext<some DiagnosticCollector>,
+	) -> TopLevelDeclarationDescriptor? {
+		guard context.uiFrameworks.contains(.swiftUI) else {
+			return nil
+		}
+		let conditionalImport = TopLevelCompilerConditionalIfDescriptor("canImport(SwiftUI)") {
+			ImportDescriptor("SwiftUI")
+
+			ExtensionDescriptor(.identifier("SwiftUI.Image"), accessModifier: context.accessModifier) {
+				FunctionDescriptor.initializer(
+					comment: "Initialize an `Image` with an SF Symbol resource.",
+					parameters: ParametersList {
+						Parameter("resource", label: "system", type: .identifier(Self.resourceStructName))
+					}) {
+						ExpressionDescriptor.functionCall("self.init") {
+							Argument(label: Self.systemNameProperty, value: .memberAccess("resource", Self.systemNameProperty))
+						}
+					}
+			}
 		}
 		return .compilerControl(.conditional(.if(conditionalImport)))
 	}
