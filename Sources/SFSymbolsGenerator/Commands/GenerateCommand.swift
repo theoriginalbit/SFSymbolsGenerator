@@ -32,6 +32,12 @@ struct GenerateCommand: ParsableCommand {
 	private var diagnosticMode: DiagnosticMode = .cli
 
 	@Flag(
+		exclusivity: .exclusive,
+		help: "The access modifier applied to the generated code. Defaults to `internal`."
+	)
+	private var accessModifier: AccessModifier = .internal
+
+	@Flag(
 		name: .customLong("build-tool"),
 		inversion: .prefixedNo,
 		exclusivity: .chooseLast,
@@ -50,6 +56,7 @@ struct GenerateCommand: ParsableCommand {
 			let context = CodeGenerator.Context(
 				outputDirectory: outputDirectory,
 				diagnostics: diagnostics,
+				accessModifier: accessModifier,
 			)
 
 			let generator = CodeGenerator()
