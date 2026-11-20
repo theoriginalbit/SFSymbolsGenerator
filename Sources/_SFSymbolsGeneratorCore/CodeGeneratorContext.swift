@@ -3,12 +3,13 @@
 //
 
 import struct Foundation.URL
+import enum SwiftStructureKit.AccessModifierDescriptor
 
 package extension CodeGenerator {
 	struct Context<Diagnostics: DiagnosticCollector> {
 		let outputDirectory: URL
 		let diagnostics: Diagnostics
-		let accessModifier: AccessModifier
+		let accessModifier: AccessModifierDescriptor
 
 		package init(
 			outputDirectory: URL,
@@ -17,7 +18,11 @@ package extension CodeGenerator {
 		) {
 			self.outputDirectory = outputDirectory
 			self.diagnostics = diagnostics
-			self.accessModifier = accessModifier
+			self.accessModifier = switch accessModifier {
+			case .public: .public
+			case .package: .package
+			case .internal: .internal
+			}
 		}
 	}
 }

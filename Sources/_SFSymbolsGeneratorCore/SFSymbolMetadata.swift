@@ -13,6 +13,8 @@ struct SFSymbolMetadata: Sendable {
 
 	let allSymbolsByCategory: [String: [Symbol]]
 
+	let categories: [Category]
+
 	init(resourceFolder resources: URL = Self.systemResourceFolder) throws {
 		let nameAvailability = try readFile(in: resources, "name_availability.plist", to: NameAvailability.self)
 		let symbolRestrictions = try readFile(in: resources, "symbol_restrictions.strings", to: [String: String].self)
@@ -42,6 +44,7 @@ struct SFSymbolMetadata: Sendable {
 		allSymbolsByCategory = Dictionary(grouping: symbols, by: {
 			categoryResolver.category(for: $0.name)
 		})
+		categories = categoryResolver.categories
 	}
 
 	/// A set of all language codes, used to determine if the last segment of a symbol is a language code.
@@ -81,7 +84,7 @@ private struct CategoryResolver {
 		"draw"
 	]
 
-	let categories: [String]
+	let categories: [SFSymbolMetadata.Category]
 	let symbolCategories: [String: [String]]
 	let nameAliases: [String: String]
 	let rank: [String: Int]
@@ -93,9 +96,7 @@ private struct CategoryResolver {
 		let allCategories = try readFile(in: resources, "categories.plist", to: [SFSymbolMetadata.Category].self)
 		let symbolCategories = try readFile(in: resources, "symbol_categories.plist", to: [String: [String]].self)
 
-		self.categories = allCategories.lazy
-			.map(\.key)
-			.filter { !Self.nonSubjectCategoryKeys.contains($0) }
+		self.categories = allCategories.lazy.filter { !Self.nonSubjectCategoryKeys.contains($0.key) }
 		self.symbolCategories = symbolCategories
 		self.nameAliases = nameAliases
 
@@ -104,8 +105,8 @@ private struct CategoryResolver {
 			sizes[key, default: 0] += 1
 		}
 		let ranked = categories.enumerated()
-			.sorted { (sizes[$0.element] ?? 0, $0.offset) < (sizes[$1.element] ?? 0, $1.offset) }
-		self.rank = Dictionary(uniqueKeysWithValues: ranked.enumerated().map { ($0.element.element, $0.offset) })
+			.sorted { (sizes[$0.element.key] ?? 0, $0.offset) < (sizes[$1.element.key] ?? 0, $1.offset) }
+		self.rank = Dictionary(uniqueKeysWithValues: ranked.enumerated().map { ($0.element.element.key, $0.offset) })
 	}
 
 	func category(for name: String) -> String {
@@ -134,8 +135,10 @@ extension SFSymbolMetadata {
 		var isDeprecated: Bool { replacementName != nil }
 	}
 
-	struct Category: Hashable, Sendable, Decodable {
+	struct Category: Hashable, Sendable, Decodable, CustomStringConvertible {
 		let key: String
+
+		var description: String { key }
 	}
 
 	struct Availability: Hashable, Sendable {

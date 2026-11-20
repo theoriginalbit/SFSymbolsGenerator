@@ -13,7 +13,7 @@ struct GenerateCommand: ParsableCommand {
 	)
 
 	@Option(
-		name: [.short, .customLong("output"), .long],
+		name: .long,
 		help: ArgumentHelp(
 			"Path for the generated Swift file.",
 			discussion: "If not provided it will be generated in the current working directory.",
@@ -33,7 +33,7 @@ struct GenerateCommand: ParsableCommand {
 
 	@Flag(
 		exclusivity: .exclusive,
-		help: "The access modifier applied to the generated code. Defaults to `internal`."
+		help: "The access modifier applied to the generated code"
 	)
 	private var accessModifier: AccessModifier = .internal
 
@@ -45,7 +45,10 @@ struct GenerateCommand: ParsableCommand {
 	)
 	private var isRunningAsBuildTool: Bool = false
 
-	@Flag(name: .shortAndLong, help: "Increase verbosity (-vvv).")
+	@Flag(
+		name: .shortAndLong,
+		help: "Increase verbosity (-vvv).",
+	)
 	private var verbose: Int
 
 	func run() throws {
