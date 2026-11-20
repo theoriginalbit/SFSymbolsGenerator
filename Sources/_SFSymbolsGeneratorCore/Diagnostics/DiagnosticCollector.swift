@@ -5,7 +5,7 @@
 import struct Foundation.Data
 import class Foundation.FileHandle
 
-package enum DiagnosticMode {
+package enum DiagnosticMode: String, CaseIterable {
 	case cli
 	case xcode
 }

@@ -24,18 +24,17 @@ struct GenerateCommand: ParsableCommand {
 
 	@Flag(
 		exclusivity: .exclusive,
-		help: ArgumentHelp(
-			"Show diagnostic messages with short filenames (best for CLI) or long file paths for Xcode's issue navigator to annotate (best for parsing.)",
-			visibility: .hidden,
-		),
-	)
-	private var diagnosticMode: DiagnosticMode = .cli
-
-	@Flag(
-		exclusivity: .exclusive,
 		help: "The access modifier applied to the generated code"
 	)
 	private var accessModifier: AccessModifier = .internal
+
+	@Option(
+		name: .customLong("mode"),
+		help: ArgumentHelp(
+			"Adjusts the diagnostic message output",
+		),
+	)
+	private var diagnosticMode: DiagnosticMode = .cli
 
 	@Flag(
 		name: .customLong("build-tool"),
