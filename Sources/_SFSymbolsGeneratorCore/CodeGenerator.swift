@@ -21,20 +21,22 @@ package struct CodeGenerator {
 			withIntermediateDirectories: true,
 		)
 
+		informUserAboutFilesThatWillBeSkippedBasedOnContext(context)
+
 		let context = SymbolContext(context: context, metadata: metadata)
 
 		// counters for a nice little message at the end
-		var files = 1
-		var total = 0
+		var totalFiles = 1
+		var totalSymbols = 0
 
 		try generateSFSymbolResourceFile(with: context)
 
 		for category in metadata.categories {
-			let symbolsCount = try generateSFSymbolFile(for: category, with: context)
-			files += 1
-			total += symbolsCount
+			let (filesCount, symbolsCount) = try generateSFSymbolFiles(for: category, with: context)
+			totalFiles += filesCount
+			totalSymbols += symbolsCount
 		}
-		print("Generated SF Symbols accessors for", total, "symbols, across", files, "files")
+		print("Generated", totalFiles, "files for", totalSymbols, "SF Symbols")
 
 		// Abort if any diagnostic errors were prevented complete generation
 		guard !context.diagnostics.hasErrors else {
@@ -78,37 +80,79 @@ package struct CodeGenerator {
 		try renderIfChanged(file, to: output, with: context)
 	}
 
-	func generateSFSymbolFile(
+	func generateSFSymbolFiles(
+		for category: SFSymbolMetadata.Category,
+		with context: SymbolContext<some DiagnosticCollector>,
+	) throws -> (filesCount: Int, symbolsCount: Int) {
+		let symbols = context.metadata.symbols(in: category)
+
+		var filesCount: Int = 0
+
+		filesCount += try generateSFSymbolDefinitionsFile(symbols, for: category, with: context)
+		// always attempt all UI frameworks, let the generate function determine how
+		// to write it based on context.uiFrameworks
+		for framework in UIFramework.allCases {
+			filesCount += try generateSFSymbolFrameworkExtensionsFile(framework, symbols, for: category, with: context)
+		}
+
+		return (filesCount, symbols.count)
+	}
+
+	func generateSFSymbolDefinitionsFile(
+		_ symbols: [SFSymbolMetadata.Symbol],
 		for category: SFSymbolMetadata.Category,
 		with context: SymbolContext<some DiagnosticCollector>,
 	) throws -> Int {
 		let output = context.categoryFile(for: category)
-		let symbols = context.metadata.symbols(in: category)
 
 		let file = SwiftFile(headerComment: fileHeader(for: output)) {
 			ExtensionDescriptor(.identifier(Self.resourceStructName), accessModifier: context.accessModifier) {
 				for symbol in symbols {
 					if let identifier = Identifier.camelCased(symbol.name)?.value {
-						PropertyDescriptor.computed(
+						PropertyDescriptor.let(
 							identifier,
 							comment: propertyComment(for: symbol),
 							attributes: propertyAttributes(for: symbol),
 							isStatic: true,
-							type: .identifier(Self.resourceStructName)
-						) {
-							ExpressionDescriptor.functionCall(.identifier(Self.resourceStructName)) {
+							type: .identifier(Self.resourceStructName),
+							defaultValue: ExpressionDescriptor.functionCall(.identifier(Self.resourceStructName)) {
 								Argument(label: Self.systemNameProperty, value: .literal(.string(symbol.name)))
-							}
-						}
+							},
+						)
 					} else {
-						context.diagnostics.fault("internal error: could not generate valid identifier for symbol \(symbol.name)")
+						context.fault("internal error: could not generate valid identifier for symbol \(symbol.name)")
 					}
 				}
 			}
 		}
 
 		try renderIfChanged(file, to: output, with: context)
-		return symbols.count
+		return 1
+	}
+
+	func generateSFSymbolFrameworkExtensionsFile(
+		_ framework: UIFramework,
+		_ symbols: [SFSymbolMetadata.Symbol],
+		for category: SFSymbolMetadata.Category,
+		with context: SymbolContext<some DiagnosticCollector>,
+	) throws -> Int {
+		let output = context.frameWorkConvenienceFile(framework, for: category)
+
+		guard context.symbolExtensions, context.uiFrameworks.contains(framework) else {
+			if context.isRunningAsBuildTool {
+				try renderIfChanged(Data(), to: output, with: context)
+				return 1
+			}
+			context.info("Skipping writing to \(output.path())")
+			return 0
+		}
+
+		let file = SwiftFile(headerComment: fileHeader(for: output)) {
+			conditionalImport(for: framework)
+		}
+
+		try renderIfChanged(file, to: output, with: context)
+		return 1
 	}
 
 	func renderIfChanged(
@@ -127,12 +171,12 @@ package struct CodeGenerator {
 	) throws {
 		if let existingData = try? Data(contentsOf: outputURL), existingData == data {
 			// Content is identical, no write needed otherwise we would update the modified time
-			context.diagnostics.info("No changes needed to \(outputURL.path())")
+			context.info("No changes needed to \(outputURL.path())")
 			return
 		}
 
 		try data.write(to: outputURL, options: .atomic)
-		context.diagnostics.info("Written to \(outputURL.path())")
+		context.info("Written to \(outputURL.path())")
 	}
 
 	private func fileHeader(for outputURL: URL) -> FileHeaderCommentDescriptor {
@@ -202,5 +246,29 @@ package struct CodeGenerator {
 			.renamed(replacementName),
 			.message("This name has been deprecated. You should use a more modern name if your app does not need to support older platforms.")
 		)
+	}
+
+	private func conditionalImport(for framework: UIFramework) -> TopLevelDeclarationDescriptor {
+		let conditionalImport = TopLevelCompilerConditionalIfDescriptor("canImport(\(framework.rawValue))") {
+			ImportDescriptor(framework.rawValue)
+		}
+		return .compilerControl(.conditional(.if(conditionalImport)))
+	}
+
+	private func informUserAboutFilesThatWillBeSkippedBasedOnContext(_ context: Context<some DiagnosticCollector>,) {
+		for framework in UIFramework.allCases {
+			guard !context.symbolExtensions || !context.uiFrameworks.contains(framework) else {
+				continue
+			}
+			var failingReason = context.symbolExtensions
+			? "Requested UI frameworks did not include \(framework.rawValue)"
+			: "UI framework extensions were disabled"
+			if context.isRunningAsBuildTool {
+				failingReason += "; will generate empty \(framework.rawValue) files for build tool"
+			} else {
+				failingReason += "; will not generate \(framework.rawValue) files"
+			}
+			context.info(failingReason)
+		}
 	}
 }

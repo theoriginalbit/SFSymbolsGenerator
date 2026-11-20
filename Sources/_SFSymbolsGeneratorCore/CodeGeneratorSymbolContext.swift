@@ -27,5 +27,32 @@ extension CodeGenerator {
 		func categoryFile(for category: SFSymbolMetadata.Category) -> URL {
 			context.outputDirectory.appending(component: "SFSymbolResource+\(category).generated.swift")
 		}
+
+		func frameWorkConvenienceFile(_ uiFramework: UIFramework, for category: SFSymbolMetadata.Category) -> URL {
+			context.outputDirectory.appending(component: "SFSymbolResource+\(category)+\(uiFramework).generated.swift")
+		}
+
+		// MARK: Diagnostics conveniences
+
+		func note(_ message: String, location: SourceLocation? = nil) {
+			context.diagnostics.note(message, location: location)
+		}
+
+		func info(_ message: String, location: SourceLocation? = nil) {
+			context.diagnostics.info(message, location: location)
+		}
+
+		func warning(_ message: String, location: SourceLocation? = nil) {
+			context.diagnostics.warning(message, location: location)
+		}
+
+		func error(_ message: String, location: SourceLocation? = nil) {
+			context.diagnostics.error(message, location: location)
+		}
+
+		/// - Important: Emitting a fault will output the diagnostic and immediately exit the process
+		func fault(_ message: String, location: SourceLocation? = nil) {
+			context.diagnostics.fault(message, location: location)
+		}
 	}
 }

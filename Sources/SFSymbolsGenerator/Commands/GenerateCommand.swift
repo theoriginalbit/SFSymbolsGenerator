@@ -23,6 +23,20 @@ struct GenerateCommand: ParsableCommand {
 	private var outputDirectory: URL? = nil
 
 	@Flag(
+		inversion: .prefixedEnableDisable,
+		help: ArgumentHelp(
+			"Generate SF Symbol extensions on Apple framework image types.",
+			visibility: .private,
+		),
+	)
+	private var symbolExtensions: Bool = true
+
+	@Option(
+		help: "Generate SF Symbol support for the specified UI frameworks, comma-separated.",
+	)
+	private var uiFrameworks: Set<UIFramework> = Set(UIFramework.allCases)
+
+	@Flag(
 		exclusivity: .exclusive,
 		help: "The access modifier applied to the generated code"
 	)
@@ -59,6 +73,9 @@ struct GenerateCommand: ParsableCommand {
 				outputDirectory: outputDirectory,
 				diagnostics: diagnostics,
 				accessModifier: accessModifier,
+				symbolExtensions: symbolExtensions,
+				uiFrameworks: uiFrameworks,
+				isRunningAsBuildTool: isRunningAsBuildTool,
 			)
 
 			let generator = CodeGenerator()
