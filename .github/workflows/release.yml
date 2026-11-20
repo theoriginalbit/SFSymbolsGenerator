@@ -1,0 +1,37 @@
+name: Build Release Artifacts
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  macos:
+    name: Build macOS binary and upload to release artifacts
+    runs-on: macos-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Build macOS binary
+        run: swift build -c release -Xswiftc -Osize
+
+      - name: Strip macOS binary
+        run: strip -rSTx .build/release/sfgenerate
+
+      - name: Create release artifacts
+        run: |
+          zsh Scripts/package-release.zsh "$GITHUB_REF_NAME"
+          echo "SwiftPM checksum: $(cat sfgenerate.artifactbundle.zip.sha256)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ github.event.release.tag_name }}" \
+            sfgenerate-macos-arm64.zip \
+            sfgenerate.artifactbundle.zip \
+            sfgenerate.artifactbundle.zip.sha256 \
+            --clobber

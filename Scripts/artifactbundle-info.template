@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "1.0",
+  "artifacts": {
+    "gensettings": {
+      "version": "__VERSION__",
+      "type": "executable",
+      "variants": [
+        {
+          "path": "gensettings-__VERSION__-macos/bin/gensettings",
+          "supportedTriples": ["arm64-apple-macosx"]
+        }
+      ]
+    }
+  }
+}
