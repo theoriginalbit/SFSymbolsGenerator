@@ -68,12 +68,13 @@ enum CommonFile {
 	}
 
 	private static func deprecationAttribute(for symbol: SFSymbolMetadata.Symbol) -> AttributeDescriptor? {
-		guard let replacementName = symbol.replacementName else {
-			return nil
-		}
+		guard let replacementName = symbol.replacementName,
+			  let swiftName = Identifier.camelCased(replacementName)?.value
+		else { return nil }
 		return .available(
+			.wildcard,
 			.deprecated,
-			.renamed(replacementName),
+			.renamed(swiftName),
 			.message("This name has been deprecated. You should use a more modern name if your app does not need to support older platforms.")
 		)
 	}

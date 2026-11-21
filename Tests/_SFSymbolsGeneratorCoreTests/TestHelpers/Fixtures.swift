@@ -11,12 +11,11 @@ enum Fixtures {
 		in bundle: Bundle = .module,
 		sourceLocation: SourceLocation = #_sourceLocation,
 	) throws -> URL {
-		print(name)
 		let url = bundle.url(
 			forResource: name,
 			withExtension: "fixture",
 			subdirectory: "Resources",
 		)
-		return try #require(url, sourceLocation: sourceLocation)
+		return try #require(url, "Unable to find fixture '\(name)'", sourceLocation: sourceLocation)
 	}
 }

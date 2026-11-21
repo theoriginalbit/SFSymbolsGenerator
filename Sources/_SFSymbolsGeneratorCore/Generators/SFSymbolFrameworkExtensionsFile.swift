@@ -48,7 +48,7 @@ enum SFSymbolFrameworkExtensionsFile {
 							comment: CommonFile.propertyComment(for: symbol),
 							attributes: CommonFile.propertyAttributes(for: symbol),
 							name: identifier,
-							returns: .identifier("UIKit.UIImage"),
+							returns: .identifier("AppKit.NSImage"),
 							isStatic: true,
 							parameters: ParametersList {
 								Parameter("accessibilityDescription", type: .optional(.string), defaultValue: .literal(.nil))

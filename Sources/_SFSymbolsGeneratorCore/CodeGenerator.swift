@@ -24,24 +24,31 @@ package struct CodeGenerator {
 		informUserAboutFilesThatWillBeSkippedBasedOnContext(context)
 
 		let context = SymbolContext(context: context, metadata: metadata)
-
-		// counters for a nice little message at the end
-		var totalFiles = 1
-		var totalSymbols = 0
-
-		try generateSFSymbolResourceFile(with: context)
-
-		for category in metadata.categories {
-			let (filesCount, symbolsCount) = try generateSFSymbolFiles(for: category, with: context)
-			totalFiles += filesCount
-			totalSymbols += symbolsCount
-		}
+		let (totalFiles, totalSymbols) = try generateSFSymbolFiles(with: context)
 		print("Generated", totalFiles, "files for", totalSymbols, "SF Symbols")
 
 		// Abort if any diagnostic errors were prevented complete generation
 		guard !context.diagnostics.hasErrors else {
 			throw GeneratorError.generationFailed
 		}
+	}
+
+	func generateSFSymbolFiles(
+		with context: SymbolContext<some DiagnosticCollector>,
+	) throws -> (totalFiles: Int, totalSymbols: Int) {
+		// counters for a nice little message at the end
+		var totalFiles = 1
+		var totalSymbols = 0
+
+		try generateSFSymbolResourceFile(with: context)
+
+		for category in context.metadata.categories {
+			let (filesCount, symbolsCount) = try generateSFSymbolFiles(for: category, with: context)
+			totalFiles += filesCount
+			totalSymbols += symbolsCount
+		}
+
+		return (totalFiles, totalSymbols)
 	}
 
 	func generateSFSymbolResourceFile(

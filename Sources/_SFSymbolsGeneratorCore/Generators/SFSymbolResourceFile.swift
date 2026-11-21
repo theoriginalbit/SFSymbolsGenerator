@@ -59,18 +59,28 @@ enum SFSymbolResourceFile {
 		let conditionalImport = TopLevelCompilerConditionalIfDescriptor("canImport(AppKit)") {
 			ImportDescriptor("AppKit")
 
-			ExtensionDescriptor(.identifier("AppKit.NSImage"), accessModifier: context.accessModifier, attributes: attributes) {
+			ProtocolDescriptor("_SFResourceInitProtocol", accessModifier: context.accessModifier) {}
+
+			ExtensionDescriptor(.identifier("AppKit.NSImage"), conformances: [.identifier("_SFResourceInitProtocol")])
+
+			ExtensionDescriptor(.identifier("_SFResourceInitProtocol"), accessModifier: context.accessModifier, attributes: attributes) {
 				FunctionDescriptor.initializer(
 					comment: "Initialize an `NSImage` with an SF Symbol resource.",
-					convenience: true,
 					parameters: ParametersList {
 						Parameter("resource", label: "system", type: .identifier(CommonFile.resourceStructName))
 						Parameter("accessibilityDescription", type: .optional(.string))
 					}) {
-						ExpressionDescriptor.functionCall("self.init") {
-							Argument(label: CommonFile.systemNameProperty, value: .memberAccess("resource", CommonFile.systemNameProperty))
-							Argument(label: "accessibilityDescription", value: .identifier("accessibilityDescription"))
-						}
+						StatementDescriptor.assignment(
+							AssignmentStatementDescriptor(
+								"self",
+								ExpressionDescriptor.forcedValue(
+									.functionCall("AppKit.NSImage") {
+										Argument(label: "systemSymbolName", value: .memberAccess("resource", CommonFile.systemNameProperty))
+										Argument(label: "accessibilityDescription", value: .identifier("accessibilityDescription"))
+									}
+								).as(.selfType, .forced)
+							)
+						)
 					}
 			}
 		}
