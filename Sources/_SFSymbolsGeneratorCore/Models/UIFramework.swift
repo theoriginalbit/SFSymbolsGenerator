@@ -9,6 +9,12 @@ package enum UIFramework: String, Hashable, CaseIterable {
 	case uiKit = "UIKit"
 	case swiftUI = "SwiftUI"
 
+	var fileNameDescription: String {
+		rawValue
+	}
+
+	package static let allCasesSupportingSymbolExtensions: [UIFramework] = [.appKit, .uiKit]
+
 	package static let allCasesAsList = UIFramework.allCases
 		.map(\.rawValue)
 		.joined(separator: ",")

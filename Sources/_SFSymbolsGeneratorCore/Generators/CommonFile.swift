@@ -16,4 +16,65 @@ enum CommonFile {
 		DO NOT EDIT — changes will be overwritten on the next build.
 		"""
 	}
+
+	static func propertyComment(for symbol: SFSymbolMetadata.Symbol) -> DocCommentDescriptor {
+		guard let restriction = symbol.restriction else {
+			return #"The "\#(symbol.name)" SF Symbol."#
+		}
+		return """
+			The "\(symbol.name)" SF Symbol.
+
+			- Important: \(restriction)
+			"""
+	}
+
+	static func propertyAttributes(for symbol: SFSymbolMetadata.Symbol) -> [AttributeDescriptor] {
+		var result: [AttributeDescriptor] = []
+		if let attribute = availabilityAttribute(for: symbol) {
+			result.append(attribute)
+		}
+		if let attribute = deprecationAttribute(for: symbol) {
+			result.append(attribute)
+		}
+		return result
+	}
+
+	private static func availabilityAttribute(for symbol: SFSymbolMetadata.Symbol) -> AttributeDescriptor? {
+		guard let iOS = platformVersion(\.iOS, from: symbol),
+			  let macOS = platformVersion(\.macOS, from: symbol),
+			  let watchOS = platformVersion(\.watchOS, from: symbol),
+			  let tvOS = platformVersion(\.tvOS, from: symbol),
+			  let visionOS = platformVersion(\.visionOS, from: symbol)
+				else { return nil }
+		return .available(
+			AvailabilityArgumentsList(
+				iOS: iOS,
+				macOS: macOS,
+				watchOS: watchOS,
+				tvOS: tvOS,
+				visionOS: visionOS
+			)
+		)
+	}
+
+	private static func platformVersion(
+		_ keyPath: KeyPath<SFSymbolMetadata.Availability, String>,
+		from symbol: SFSymbolMetadata.Symbol
+	) -> PlatformVersion? {
+		guard let availability = symbol.availability?[keyPath: keyPath] else {
+			return nil
+		}
+		return PlatformVersion(parsing: availability)
+	}
+
+	private static func deprecationAttribute(for symbol: SFSymbolMetadata.Symbol) -> AttributeDescriptor? {
+		guard let replacementName = symbol.replacementName else {
+			return nil
+		}
+		return .available(
+			.deprecated,
+			.renamed(replacementName),
+			.message("This name has been deprecated. You should use a more modern name if your app does not need to support older platforms.")
+		)
+	}
 }

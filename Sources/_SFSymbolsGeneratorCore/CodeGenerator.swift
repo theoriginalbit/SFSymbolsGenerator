@@ -61,10 +61,10 @@ package struct CodeGenerator {
 		var filesCount: Int = 0
 
 		filesCount += try generateSFSymbolDefinitionsFile(symbols, for: category, with: context)
-		// always attempt all UI frameworks, let the generate function determine how
+		// always attempt all compatible UI frameworks, let the generate function determine how
 		// to write it based on context.uiFrameworks
-		for framework in UIFramework.allCases {
-			filesCount += try generateSFSymbolFrameworkExtensionsFile(framework, symbols, for: category, with: context)
+		for framework in UIFramework.allCasesSupportingSymbolExtensions {
+			filesCount += try generateSFSymbolFrameworkExtensionsFile(framework, symbols: symbols, for: category, with: context)
 		}
 
 		return (filesCount, symbols.count)
@@ -83,11 +83,14 @@ package struct CodeGenerator {
 
 	func generateSFSymbolFrameworkExtensionsFile(
 		_ framework: UIFramework,
-		_ symbols: [SFSymbolMetadata.Symbol],
+		symbols: [SFSymbolMetadata.Symbol],
 		for category: SFSymbolMetadata.Category,
 		with context: SymbolContext<some DiagnosticCollector>,
 	) throws -> Int {
-		let output = context.frameWorkConvenienceFile(framework, for: category)
+		guard let output = context.frameWorkConvenienceFile(framework, for: category) else {
+			// should already have been logged by informUserAboutFilesThatWillBeSkippedBasedOnContext
+			return 0
+		}
 
 		guard context.symbolExtensions, context.uiFrameworks.contains(framework) else {
 			if context.isRunningAsBuildTool {
@@ -98,13 +101,12 @@ package struct CodeGenerator {
 			return 0
 		}
 
-		let file = SFSymbolFrameworkExtensionsFile.generate(
+		guard let file = SFSymbolFrameworkExtensionsFile.generate(
 			framework,
-			symbols,
-			for: category,
+			symbols: symbols,
 			fileName: output.lastPathComponent,
 			with: context
-		)
+		) else { return 0 } // assume function emitted diagnostics
 
 		try renderIfChanged(file, to: output, with: context)
 		return 1
@@ -135,13 +137,17 @@ package struct CodeGenerator {
 	}
 
 	private func informUserAboutFilesThatWillBeSkippedBasedOnContext(_ context: Context<some DiagnosticCollector>,) {
-		for framework in UIFramework.allCases {
+		if context.symbolExtensions, context.uiFrameworks.contains(.swiftUI) {
+			context.info("SwiftUI Image will not have symbol conveniences (e.g. Image.circleFilled) generated, use explicit Image(system: .circleFilled) instead")
+		}
+
+		for framework in UIFramework.allCasesSupportingSymbolExtensions {
 			guard !context.symbolExtensions || !context.uiFrameworks.contains(framework) else {
 				continue
 			}
 			var failingReason = context.symbolExtensions
-			? "Requested UI frameworks did not include \(framework.rawValue)"
-			: "UI framework extensions were disabled"
+				? "Requested UI frameworks did not include \(framework.rawValue)"
+				: "UI framework extensions were disabled"
 			if context.isRunningAsBuildTool {
 				failingReason += "; will generate empty \(framework.rawValue) files for build tool"
 			} else {

@@ -4,10 +4,13 @@
 
 import Foundation
 
+private let fileExtension = "generated.swift"
+
 extension CodeGenerator {
 	/// Context required to generate files in addition to the Context supplied by the command.
 	@dynamicMemberLookup
 	struct SymbolContext<Diagnostics: DiagnosticCollector> {
+
 		let context: Context<Diagnostics>
 		let metadata: SFSymbolMetadata
 
@@ -21,15 +24,19 @@ extension CodeGenerator {
 		}
 
 		func symbolResourceFile() -> URL {
-			context.outputDirectory.appending(component: "SFSymbolResource.generated.swift")
+			let fileName = "\(CommonFile.resourceStructName).\(fileExtension)"
+			return context.outputDirectory.appending(component: fileName)
 		}
 
 		func categoryFile(for category: SFSymbolMetadata.Category) -> URL {
-			context.outputDirectory.appending(component: "SFSymbolResource+\(category).generated.swift")
+			let fileName = "\(CommonFile.resourceStructName)+\(category.fileNameDescription).\(fileExtension)"
+			return context.outputDirectory.appending(component: fileName)
 		}
 
-		func frameWorkConvenienceFile(_ uiFramework: UIFramework, for category: SFSymbolMetadata.Category) -> URL {
-			context.outputDirectory.appending(component: "SFSymbolResource+\(category)+\(uiFramework.rawValue).generated.swift")
+		func frameWorkConvenienceFile(_ uiFramework: UIFramework, for category: SFSymbolMetadata.Category) -> URL? {
+			guard uiFramework != .swiftUI else { return nil }
+			let fileName = "\(CommonFile.resourceStructName)+\(category.fileNameDescription)+\(uiFramework.fileNameDescription).\(fileExtension)"
+			return context.outputDirectory.appending(component: fileName)
 		}
 
 		// MARK: Diagnostics conveniences

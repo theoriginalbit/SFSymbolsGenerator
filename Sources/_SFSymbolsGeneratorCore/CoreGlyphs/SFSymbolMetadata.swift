@@ -149,6 +149,11 @@ extension SFSymbolMetadata {
 		let key: String
 
 		var description: String { key }
+
+		var fileNameDescription: String {
+			guard let first = key.first else { return "" }
+			return first.uppercased() + key.dropFirst()
+		}
 	}
 
 	struct Availability: Hashable, Sendable {
