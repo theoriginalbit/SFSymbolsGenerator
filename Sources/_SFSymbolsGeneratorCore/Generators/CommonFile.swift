@@ -28,12 +28,15 @@ enum CommonFile {
 			"""
 	}
 
-	static func propertyAttributes(for symbol: SFSymbolMetadata.Symbol) -> [AttributeDescriptor] {
+	static func propertyAttributes(
+		for symbol: SFSymbolMetadata.Symbol,
+		using context: CodeGenerator.SymbolContext<some DiagnosticCollector>,
+	) -> [AttributeDescriptor] {
 		var result: [AttributeDescriptor] = []
 		if let attribute = availabilityAttribute(for: symbol) {
 			result.append(attribute)
 		}
-		if let attribute = deprecationAttribute(for: symbol) {
+		if let attribute = deprecationAttribute(for: symbol, using: context) {
 			result.append(attribute)
 		}
 		return result
@@ -67,10 +70,23 @@ enum CommonFile {
 		return PlatformVersion(parsing: availability)
 	}
 
-	private static func deprecationAttribute(for symbol: SFSymbolMetadata.Symbol) -> AttributeDescriptor? {
-		guard let replacementName = symbol.replacementName,
-			  let swiftName = Identifier.camelCased(replacementName)?.value
-		else { return nil }
+	private static func deprecationAttribute(
+		for symbol: SFSymbolMetadata.Symbol,
+		using context: CodeGenerator.SymbolContext<some DiagnosticCollector>,
+	) -> AttributeDescriptor? {
+		guard let replacementName = symbol.replacementName else { return nil }
+
+		guard let swiftName = context.swiftRenameParameter(for: replacementName) else {
+			// BUG: SE-0451 did not support raw identifiers in renamed attribute
+			//   Fix is expected in Swift 6.5 but for now we must handle
+			//   Ref: https://forums.swift.org/t/se-0451-vs-renamed-attributes/86268
+			return .available(
+				.wildcard,
+				.deprecated,
+				.message("This name has been replaced with `\(replacementName)`. You should use this name if your app does not need to support older platforms.")
+			)
+		}
+
 		return .available(
 			.wildcard,
 			.deprecated,

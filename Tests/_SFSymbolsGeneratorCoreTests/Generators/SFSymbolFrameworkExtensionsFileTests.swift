@@ -25,11 +25,11 @@ import SwiftStructureKitTestSupport
 			.uiKit,
 			symbols: symbols,
 			fileName: "SFSymbolResource+Shapes+UIKit.generated.swift",
-			with: context,
+			using: context,
 		)
 		let outputURL = try #require(context.frameWorkConvenienceFile(.uiKit, for: SFSymbolMetadata.Category(key: "shapes")))
 
-		try CodeGenerator().renderIfChanged(try #require(file), to: outputURL, with: context)
+		try CodeGenerator().renderIfChanged(try #require(file), to: outputURL, using: context)
 		let output = String(decoding: try Data(contentsOf: outputURL), as: UTF8.self)
 
 		expectRendered(output, equals: try Fixtures.url("SFSymbolFrameworkUIKitExtensionsFile"))
@@ -52,11 +52,11 @@ import SwiftStructureKitTestSupport
 			.appKit,
 			symbols: symbols,
 			fileName: "SFSymbolResource+Shapes+AppKit.generated.swift",
-			with: context,
+			using: context,
 		)
 		let outputURL = try #require(context.frameWorkConvenienceFile(.uiKit, for: SFSymbolMetadata.Category(key: "shapes")))
 
-		try CodeGenerator().renderIfChanged(try #require(file), to: outputURL, with: context)
+		try CodeGenerator().renderIfChanged(try #require(file), to: outputURL, using: context)
 		let output = String(decoding: try Data(contentsOf: outputURL), as: UTF8.self)
 
 		expectRendered(output, equals: try Fixtures.url("SFSymbolFrameworkAppKitExtensionsFile"))
@@ -80,7 +80,7 @@ import SwiftStructureKitTestSupport
 			.swiftUI,
 			symbols: symbols,
 			fileName: "unused.swift",
-			with: context,
+			using: context,
 		) == nil)
 	}
 }

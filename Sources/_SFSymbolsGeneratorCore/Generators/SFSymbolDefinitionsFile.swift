@@ -10,16 +10,16 @@ enum SFSymbolDefinitionsFile {
 		_ symbols: [SFSymbolMetadata.Symbol],
 		for category: SFSymbolMetadata.Category,
 		fileName: String,
-		with context: CodeGenerator.SymbolContext<some DiagnosticCollector>,
+		using context: CodeGenerator.SymbolContext<some DiagnosticCollector>,
 	) -> SwiftFile {
 		SwiftFile(headerComment: CommonFile.fileHeader(fileName: fileName)) {
 			ExtensionDescriptor(.identifier(CommonFile.resourceStructName), accessModifier: context.accessModifier) {
 				for symbol in symbols {
-					if let identifier = Identifier.camelCased(symbol.name)?.value {
+					if let identifier = context.swiftIdentifier(for: symbol) {
 						PropertyDescriptor.let(
 							identifier,
 							comment: CommonFile.propertyComment(for: symbol),
-							attributes: CommonFile.propertyAttributes(for: symbol),
+							attributes: CommonFile.propertyAttributes(for: symbol, using: context),
 							isStatic: true,
 							type: .identifier(CommonFile.resourceStructName),
 							defaultValue: ExpressionDescriptor.functionCall(.identifier(CommonFile.resourceStructName)) {

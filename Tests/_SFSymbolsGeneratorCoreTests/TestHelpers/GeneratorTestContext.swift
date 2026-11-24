@@ -31,6 +31,7 @@ enum GeneratorTestContext {
 				accessModifier: .public,
 				symbolExtensions: true,
 				uiFrameworks: uiFrameworks,
+				rawIdentifiers: false,
 				isRunningAsBuildTool: false,
 			),
 			metadata: metadata,

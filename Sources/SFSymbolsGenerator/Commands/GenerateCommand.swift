@@ -51,6 +51,13 @@ struct GenerateCommand: ParsableCommand {
 	private var diagnosticMode: DiagnosticMode = .cli
 
 	@Flag(
+		inversion: .prefixedEnableDisable,
+		exclusivity: .chooseLast,
+		help: "Whether identifiers should be emitted using the raw identifier syntax introduced in Swift 6.2"
+	)
+	private var rawIdentifiers: Bool = false
+
+	@Flag(
 		name: .customLong("build-tool"),
 		inversion: .prefixedNo,
 		exclusivity: .chooseLast,
@@ -75,11 +82,12 @@ struct GenerateCommand: ParsableCommand {
 				accessModifier: accessModifier,
 				symbolExtensions: symbolExtensions,
 				uiFrameworks: uiFrameworks,
+				rawIdentifiers: rawIdentifiers,
 				isRunningAsBuildTool: isRunningAsBuildTool,
 			)
 
 			let generator = CodeGenerator()
-			try generator.run(with: context)
+			try generator.run(using: context)
 		} catch let error as GeneratorError where error.alreadyLogged {
 			// there was an error but it reports there will already be diagnostics
 			// so just throw failure so there isn't a double printout of the error

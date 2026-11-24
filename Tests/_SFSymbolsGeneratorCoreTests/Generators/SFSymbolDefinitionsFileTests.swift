@@ -26,10 +26,10 @@ import SwiftStructureKitTestSupport
 			symbols,
 			for: .init(key: "shapes"),
 			fileName: "SFSymbolResource+Shapes.generated.swift",
-			with: context,
+			using: context,
 		)
 		let outputURL = resources.appending(component: "SFSymbolResource+Shapes.generated.swift")
-		try CodeGenerator().renderIfChanged(file, to: outputURL, with: context)
+		try CodeGenerator().renderIfChanged(file, to: outputURL, using: context)
 		let output = String(decoding: try Data(contentsOf: outputURL), as: UTF8.self)
 
 		expectRendered(output, equals: try Fixtures.url("SFSymbolDefinitionsFile"))

@@ -11,7 +11,7 @@ package struct CodeGenerator {
 
 	package init() {}
 
-	package func run(with context: Context<some DiagnosticCollector>) throws {
+	package func run(using context: Context<some DiagnosticCollector>) throws {
 		// Try to load early, in case CoreGlyphs is missing (how?) or changed.
 		let metadata = try SFSymbolMetadata()
 
@@ -24,7 +24,7 @@ package struct CodeGenerator {
 		informUserAboutFilesThatWillBeSkippedBasedOnContext(context)
 
 		let context = SymbolContext(context: context, metadata: metadata)
-		let (totalFiles, totalSymbols) = try generateSFSymbolFiles(with: context)
+		let (totalFiles, totalSymbols) = try generateSFSymbolFiles(using: context)
 		print("Generated", totalFiles, "files for", totalSymbols, "SF Symbols")
 
 		// Abort if any diagnostic errors were prevented complete generation
@@ -34,16 +34,16 @@ package struct CodeGenerator {
 	}
 
 	func generateSFSymbolFiles(
-		with context: SymbolContext<some DiagnosticCollector>,
+		using context: SymbolContext<some DiagnosticCollector>,
 	) throws -> (totalFiles: Int, totalSymbols: Int) {
 		// counters for a nice little message at the end
 		var totalFiles = 1
 		var totalSymbols = 0
 
-		try generateSFSymbolResourceFile(with: context)
+		try generateSFSymbolResourceFile(using: context)
 
 		for category in context.metadata.categories {
-			let (filesCount, symbolsCount) = try generateSFSymbolFiles(for: category, with: context)
+			let (filesCount, symbolsCount) = try generateSFSymbolFiles(for: category, using: context)
 			totalFiles += filesCount
 			totalSymbols += symbolsCount
 		}
@@ -52,26 +52,26 @@ package struct CodeGenerator {
 	}
 
 	func generateSFSymbolResourceFile(
-		with context: SymbolContext<some DiagnosticCollector>,
+		using context: SymbolContext<some DiagnosticCollector>,
 	) throws {
 		let output = context.symbolResourceFile()
-		let file = SFSymbolResourceFile.generate(fileName: output.lastPathComponent, with: context)
-		try renderIfChanged(file, to: output, with: context)
+		let file = SFSymbolResourceFile.generate(fileName: output.lastPathComponent, using: context)
+		try renderIfChanged(file, to: output, using: context)
 	}
 
 	func generateSFSymbolFiles(
 		for category: SFSymbolMetadata.Category,
-		with context: SymbolContext<some DiagnosticCollector>,
+		using context: SymbolContext<some DiagnosticCollector>,
 	) throws -> (filesCount: Int, symbolsCount: Int) {
 		let symbols = context.metadata.symbols(in: category)
 
 		var filesCount: Int = 0
 
-		filesCount += try generateSFSymbolDefinitionsFile(symbols, for: category, with: context)
+		filesCount += try generateSFSymbolDefinitionsFile(symbols, for: category, using: context)
 		// always attempt all compatible UI frameworks, let the generate function determine how
 		// to write it based on context.uiFrameworks
 		for framework in UIFramework.allCasesSupportingSymbolExtensions {
-			filesCount += try generateSFSymbolFrameworkExtensionsFile(framework, symbols: symbols, for: category, with: context)
+			filesCount += try generateSFSymbolFrameworkExtensionsFile(framework, symbols: symbols, for: category, using: context)
 		}
 
 		return (filesCount, symbols.count)
@@ -80,11 +80,11 @@ package struct CodeGenerator {
 	func generateSFSymbolDefinitionsFile(
 		_ symbols: [SFSymbolMetadata.Symbol],
 		for category: SFSymbolMetadata.Category,
-		with context: SymbolContext<some DiagnosticCollector>,
+		using context: SymbolContext<some DiagnosticCollector>,
 	) throws -> Int {
 		let output = context.categoryFile(for: category)
-		let file = SFSymbolDefinitionsFile.generate(symbols, for: category, fileName: output.lastPathComponent, with: context)
-		try renderIfChanged(file, to: output, with: context)
+		let file = SFSymbolDefinitionsFile.generate(symbols, for: category, fileName: output.lastPathComponent, using: context)
+		try renderIfChanged(file, to: output, using: context)
 		return 1
 	}
 
@@ -92,7 +92,7 @@ package struct CodeGenerator {
 		_ framework: UIFramework,
 		symbols: [SFSymbolMetadata.Symbol],
 		for category: SFSymbolMetadata.Category,
-		with context: SymbolContext<some DiagnosticCollector>,
+		using context: SymbolContext<some DiagnosticCollector>,
 	) throws -> Int {
 		guard let output = context.frameWorkConvenienceFile(framework, for: category) else {
 			// should already have been logged by informUserAboutFilesThatWillBeSkippedBasedOnContext
@@ -101,7 +101,7 @@ package struct CodeGenerator {
 
 		guard context.symbolExtensions, context.uiFrameworks.contains(framework) else {
 			if context.isRunningAsBuildTool {
-				try renderIfChanged(Data(), to: output, with: context)
+				try renderIfChanged(Data(), to: output, using: context)
 				return 1
 			}
 			context.info("Skipping writing to \(output.path())")
@@ -112,26 +112,26 @@ package struct CodeGenerator {
 			framework,
 			symbols: symbols,
 			fileName: output.lastPathComponent,
-			with: context
+			using: context
 		) else { return 0 } // assume function emitted diagnostics
 
-		try renderIfChanged(file, to: output, with: context)
+		try renderIfChanged(file, to: output, using: context)
 		return 1
 	}
 
 	func renderIfChanged(
 		_ file: SwiftFile,
 		to outputURL: URL,
-		with context: SymbolContext<some DiagnosticCollector>,
+		using context: SymbolContext<some DiagnosticCollector>,
 	) throws {
 		let data = file.render(indentUsing: .spaces(4))
-		try renderIfChanged(data, to: outputURL, with: context)
+		try renderIfChanged(data, to: outputURL, using: context)
 	}
 
 	func renderIfChanged(
 		_ data: Data,
 		to outputURL: URL,
-		with context: SymbolContext<some DiagnosticCollector>,
+		using context: SymbolContext<some DiagnosticCollector>,
 	) throws {
 		if let existingData = try? Data(contentsOf: outputURL), existingData == data {
 			// Content is identical, no write needed otherwise we would update the modified time

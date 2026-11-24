@@ -15,11 +15,11 @@ import SwiftStructureKitTestSupport
 		let context = try GeneratorTestContext.make(outputDirectory: directory, uiFrameworks: Set(input.uiFrameworks))
 		let file = SFSymbolResourceFile.generate(
 			fileName: "SFSymbolResource.generated.swift",
-			with: context,
+			using: context,
 		)
 
 		let outputURL = context.symbolResourceFile()
-		try CodeGenerator().renderIfChanged(file, to: outputURL, with: context)
+		try CodeGenerator().renderIfChanged(file, to: outputURL, using: context)
 		let output = String(decoding: try Data(contentsOf: outputURL), as: UTF8.self)
 
 		expectRendered(output, equals: try Fixtures.url(input.fixture))

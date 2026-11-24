@@ -12,6 +12,7 @@ package extension CodeGenerator {
 		let accessModifier: AccessModifierDescriptor
 		let symbolExtensions: Bool
 		let uiFrameworks: Set<UIFramework>
+		let rawIdentifiers: Bool
 		let isRunningAsBuildTool: Bool
 
 		package init(
@@ -20,6 +21,7 @@ package extension CodeGenerator {
 			accessModifier: AccessModifier,
 			symbolExtensions: Bool,
 			uiFrameworks: Set<UIFramework>,
+			rawIdentifiers: Bool,
 			isRunningAsBuildTool: Bool,
 		) {
 			self.outputDirectory = outputDirectory
@@ -31,6 +33,7 @@ package extension CodeGenerator {
 			}
 			self.symbolExtensions = symbolExtensions
 			self.uiFrameworks = uiFrameworks
+			self.rawIdentifiers = rawIdentifiers
 			self.isRunningAsBuildTool = isRunningAsBuildTool
 		}
 	}

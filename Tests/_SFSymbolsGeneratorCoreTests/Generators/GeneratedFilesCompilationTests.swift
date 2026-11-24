@@ -14,7 +14,7 @@ import SwiftStructureKitTestSupport
 
 		let generator = CodeGenerator()
 		let context = try GeneratorTestContext.make(outputDirectory: directory, uiFrameworks: Set(UIFramework.allCases))
-		let resourceURL = try generateResourceFile(in: directory, using: generator, with: context)
+		let resourceURL = try generateResourceFile(in: directory, using: generator, using: context)
 
 		await assertCompilation(resourceURL)
 	}
@@ -34,10 +34,10 @@ import SwiftStructureKitTestSupport
 		]
 
 		let generator = CodeGenerator()
-		let definitionsURL = try generateDefinitionsFile(symbols, in: directory, using: generator, with: context)
+		let definitionsURL = try generateDefinitionsFile(symbols, in: directory, using: generator, using: context)
 
 		await assertCompilation(
-			try generateResourceFile(in: directory, using: generator, with: context), // required for definitions to compile
+			try generateResourceFile(in: directory, using: generator, using: context), // required for definitions to compile
 			definitionsURL
 		)
 	}
@@ -63,8 +63,8 @@ import SwiftStructureKitTestSupport
 
 		var files: [URL] = [
 			// required for extensions to compile
-			try generateResourceFile(in: directory, using: generator, with: context),
-			try generateDefinitionsFile(symbols, in: directory, using: generator, with: context),
+			try generateResourceFile(in: directory, using: generator, using: context),
+			try generateDefinitionsFile(symbols, in: directory, using: generator, using: context),
 		]
 
 		// generate the extensions
@@ -74,10 +74,10 @@ import SwiftStructureKitTestSupport
 				framework,
 				symbols: symbols,
 				fileName: extensionsURL.lastPathComponent,
-				with: context,
+				using: context,
 			)
 			let extensionsFile = try #require(file)
-			try generator.renderIfChanged(extensionsFile, to: extensionsURL, with: context)
+			try generator.renderIfChanged(extensionsFile, to: extensionsURL, using: context)
 			files.append(extensionsURL)
 		}
 
@@ -94,14 +94,14 @@ import SwiftStructureKitTestSupport
 	func generateResourceFile(
 		in directory: URL,
 		using codeGenerator: CodeGenerator,
-		with context: CodeGenerator.SymbolContext<TestDiagnosticCollector>
+		using context: CodeGenerator.SymbolContext<TestDiagnosticCollector>
 	) throws -> URL {
 		let resourceFile = SFSymbolResourceFile.generate(
 			fileName: "SFSymbolResource.generated.swift",
-			with: context,
+			using: context,
 		)
 		let resourceURL = context.symbolResourceFile()
-		try codeGenerator.renderIfChanged(resourceFile, to: resourceURL, with: context)
+		try codeGenerator.renderIfChanged(resourceFile, to: resourceURL, using: context)
 		return resourceURL
 	}
 
@@ -109,17 +109,17 @@ import SwiftStructureKitTestSupport
 		_ symbols: [SFSymbolMetadata.Symbol],
 		in directory: URL,
 		using codeGenerator: CodeGenerator,
-		with context: CodeGenerator.SymbolContext<TestDiagnosticCollector>,
+		using context: CodeGenerator.SymbolContext<TestDiagnosticCollector>,
 	) throws -> URL {
 		let definitionsFile = SFSymbolDefinitionsFile.generate(
 			symbols,
 			for: .init(key: "shapes"),
 			fileName: "SFSymbolResource+Shapes.generated.swift",
-			with: context,
+			using: context,
 		)
 
 		let definitionsURL = context.categoryFile(for: .init(key: "shapes"))
-		try codeGenerator.renderIfChanged(definitionsFile, to: definitionsURL, with: context)
+		try codeGenerator.renderIfChanged(definitionsFile, to: definitionsURL, using: context)
 		return definitionsURL
 	}
 }

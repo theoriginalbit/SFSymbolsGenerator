@@ -8,7 +8,7 @@ import SwiftStructureKit
 enum SFSymbolResourceFile {
 	static func generate(
 		fileName: String,
-		with context: CodeGenerator.SymbolContext<some DiagnosticCollector>,
+		using context: CodeGenerator.SymbolContext<some DiagnosticCollector>,
 	) -> SwiftFile {
 		SwiftFile(headerComment: CommonFile.fileHeader(fileName: fileName)) {
 			StructDescriptor(
@@ -39,16 +39,16 @@ enum SFSymbolResourceFile {
 
 			for framework in UIFramework.allCases {
 				switch framework {
-				case .appKit: appKitConvenienceInitExtension(with: context)
-				case .uiKit: uiKitConvenienceInitExtension(with: context)
-				case .swiftUI: swiftUIConvenienceInitExtension(with: context)
+				case .appKit: appKitConvenienceInitExtension(using: context)
+				case .uiKit: uiKitConvenienceInitExtension(using: context)
+				case .swiftUI: swiftUIConvenienceInitExtension(using: context)
 				}
 			}
 		}
 	}
 
 	static func appKitConvenienceInitExtension(
-		with context: CodeGenerator.SymbolContext<some DiagnosticCollector>,
+		using context: CodeGenerator.SymbolContext<some DiagnosticCollector>,
 	) -> TopLevelDeclarationDescriptor? {
 		guard context.uiFrameworks.contains(.appKit) else {
 			return nil
@@ -88,7 +88,7 @@ enum SFSymbolResourceFile {
 	}
 
 	static func uiKitConvenienceInitExtension(
-		with context: CodeGenerator.SymbolContext<some DiagnosticCollector>,
+		using context: CodeGenerator.SymbolContext<some DiagnosticCollector>,
 	) -> TopLevelDeclarationDescriptor? {
 		guard context.uiFrameworks.contains(.uiKit) else {
 			return nil
@@ -122,7 +122,7 @@ enum SFSymbolResourceFile {
 	}
 
 	static func swiftUIConvenienceInitExtension(
-		with context: CodeGenerator.SymbolContext<some DiagnosticCollector>,
+		using context: CodeGenerator.SymbolContext<some DiagnosticCollector>,
 	) -> TopLevelDeclarationDescriptor? {
 		guard context.uiFrameworks.contains(.swiftUI) else {
 			return nil

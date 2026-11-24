@@ -10,14 +10,14 @@ enum SFSymbolFrameworkExtensionsFile {
 		_ framework: UIFramework,
 		symbols: [SFSymbolMetadata.Symbol],
 		fileName: String,
-		with context: CodeGenerator.SymbolContext<some DiagnosticCollector>,
+		using context: CodeGenerator.SymbolContext<some DiagnosticCollector>,
 	) -> SwiftFile? {
 		let fileBody: TopLevelDeclarationDescriptor?
 		switch framework {
 		case .appKit:
-			fileBody = appKitConvenienceAccessorExtension(for: symbols, with: context)
+			fileBody = appKitConvenienceAccessorExtension(for: symbols, using: context)
 		case .uiKit:
-			fileBody = uiKitConvenienceAccessorExtension(for: symbols, with: context)
+			fileBody = uiKitConvenienceAccessorExtension(for: symbols, using: context)
 		case .swiftUI:
 			// SwiftUI Image will not have conveniences generated, as per Apple resource symbol generation
 			return nil
@@ -30,7 +30,7 @@ enum SFSymbolFrameworkExtensionsFile {
 
 	static func appKitConvenienceAccessorExtension(
 		for symbols: [SFSymbolMetadata.Symbol],
-		with context: CodeGenerator.SymbolContext<some DiagnosticCollector>,
+		using context: CodeGenerator.SymbolContext<some DiagnosticCollector>,
 	) -> TopLevelDeclarationDescriptor? {
 		guard context.uiFrameworks.contains(.appKit) else {
 			return nil
@@ -43,10 +43,10 @@ enum SFSymbolFrameworkExtensionsFile {
 
 			ExtensionDescriptor(.identifier("AppKit.NSImage"), accessModifier: context.accessModifier, attributes: attributes) {
 				for symbol in symbols {
-					if let identifier = Identifier.camelCased(symbol.name)?.value {
+					if let identifier = context.swiftIdentifier(for: symbol) {
 						FunctionDescriptor.function(
 							comment: CommonFile.propertyComment(for: symbol),
-							attributes: CommonFile.propertyAttributes(for: symbol),
+							attributes: CommonFile.propertyAttributes(for: symbol, using: context),
 							name: identifier,
 							returns: .identifier("AppKit.NSImage"),
 							isStatic: true,
@@ -76,7 +76,7 @@ enum SFSymbolFrameworkExtensionsFile {
 
 	static func uiKitConvenienceAccessorExtension(
 		for symbols: [SFSymbolMetadata.Symbol],
-		with context: CodeGenerator.SymbolContext<some DiagnosticCollector>,
+		using context: CodeGenerator.SymbolContext<some DiagnosticCollector>,
 	) -> TopLevelDeclarationDescriptor? {
 		guard context.uiFrameworks.contains(.uiKit) else {
 			return nil
@@ -89,11 +89,11 @@ enum SFSymbolFrameworkExtensionsFile {
 
 			ExtensionDescriptor(.identifier("UIKit.UIImage"), accessModifier: context.accessModifier, attributes: attributes) {
 				for symbol in symbols {
-					if let identifier = Identifier.camelCased(symbol.name)?.value {
+					if let identifier = context.swiftIdentifier(for: symbol) {
 						PropertyDescriptor.computed(
 							identifier,
 							comment: CommonFile.propertyComment(for: symbol),
-							attributes: CommonFile.propertyAttributes(for: symbol),
+							attributes: CommonFile.propertyAttributes(for: symbol, using: context),
 							isStatic: true,
 							type: .identifier("UIKit.UIImage"),
 						) {

@@ -23,6 +23,25 @@ extension CodeGenerator {
 			context[keyPath: keyPath]
 		}
 
+		func swiftIdentifier(for value: SFSymbolMetadata.Symbol) -> String? {
+			if context.rawIdentifiers {
+				return "`\(value.name)`"
+			} else {
+				return Identifier.camelCased(value.name)?.value
+			}
+		}
+
+		func swiftRenameParameter(for value: String) -> String? {
+			if context.rawIdentifiers {
+				// BUG: SE-0451 did not support raw identifiers in renamed attribute
+				//   Fix is expected in Swift 6.5 but for now we must handle
+				//   Ref: https://forums.swift.org/t/se-0451-vs-renamed-attributes/86268
+				nil
+			} else {
+				Identifier.camelCased(value)?.value
+			}
+		}
+
 		func symbolResourceFile() -> URL {
 			let fileName = "\(CommonFile.resourceStructName).\(fileExtension)"
 			return context.outputDirectory.appending(component: fileName)
