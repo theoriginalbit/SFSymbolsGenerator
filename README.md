@@ -39,6 +39,34 @@ sfgenerate generate \
 
 Run `sfgenerate help generate` for the complete command reference.
 
+### SwiftPM build-tool plugin
+
+Add the `SFSymbolsGeneratorPlugin` build-tool plugin to a target to generate its symbol files during the build:
+
+```swift
+.target(
+  name: "MyApp",
+  plugins: [.plugin(name: "SFSymbolsGeneratorPlugin", package: "sfsymbolsgenerator")]
+)
+```
+
+The plugin writes the generated files to its plugin output directory. To configure generation, add an optional `.sfgenerate.json` config file to the package root:
+
+```json
+{
+  "symbolExtensions": true,
+  "accessModifier": "internal",
+  "uiFrameworks": ["AppKit", "SwiftUI", "UIKit"],
+  "rawIdentifiers": false
+}
+```
+
+Each field is optional and defaults to the value shown. `accessModifier` accepts `public`, `package`, or `internal`; `uiFrameworks` accepts any combination of `AppKit`, `UIKit`, and `SwiftUI`.
+
+### Using the plugin in an Xcode project
+
+Add SFSymbolsGenerator as a package dependency in Xcode, then add `SFSymbolsGeneratorPlugin` to your app target from **Build Phases > Run Build Tool Plug-ins**. The plugin generates its files in Xcode's plugin output directory. To configure it, add `.sfgenerate.json` to the target's input files; it accepts the same options described above.
+
 ### Using the generated code
 
 ```swift

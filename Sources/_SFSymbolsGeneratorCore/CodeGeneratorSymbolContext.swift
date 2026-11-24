@@ -4,8 +4,6 @@
 
 import Foundation
 
-private let fileExtension = "generated.swift"
-
 extension CodeGenerator {
 	/// Context required to generate files in addition to the Context supplied by the command.
 	@dynamicMemberLookup
@@ -13,17 +11,19 @@ extension CodeGenerator {
 
 		let context: Context<Diagnostics>
 		let metadata: SFSymbolMetadata
+		let fileURLProvider: FileURLProvider
 
 		init(context: Context<Diagnostics>, metadata: SFSymbolMetadata) {
 			self.context = context
 			self.metadata = metadata
+			self.fileURLProvider = FileURLProvider(outputDirectory: context.outputDirectory)
 		}
 
 		subscript<T>(dynamicMember keyPath: KeyPath<Context<Diagnostics>, T>) -> T {
 			context[keyPath: keyPath]
 		}
 
-		func swiftIdentifier(for value: SFSymbolMetadata.Symbol) -> String? {
+		func swiftIdentifier(for value: SFSymbol) -> String? {
 			if context.rawIdentifiers {
 				return "`\(value.name)`"
 			} else {
@@ -43,19 +43,22 @@ extension CodeGenerator {
 		}
 
 		func symbolResourceFile() -> URL {
-			let fileName = "\(CommonFile.resourceStructName).\(fileExtension)"
-			return context.outputDirectory.appending(component: fileName)
+			fileURLProvider.symbolResourceFile()
 		}
 
-		func categoryFile(for category: SFSymbolMetadata.Category) -> URL {
-			let fileName = "\(CommonFile.resourceStructName)+\(category.fileNameDescription).\(fileExtension)"
-			return context.outputDirectory.appending(component: fileName)
+		func categoryFile(for category: SFSymbolCategory) -> URL {
+			fileURLProvider.categoryFile(for: category)
 		}
 
-		func frameWorkConvenienceFile(_ uiFramework: UIFramework, for category: SFSymbolMetadata.Category) -> URL? {
-			guard uiFramework != .swiftUI else { return nil }
-			let fileName = "\(CommonFile.resourceStructName)+\(category.fileNameDescription)+\(uiFramework.fileNameDescription).\(fileExtension)"
-			return context.outputDirectory.appending(component: fileName)
+		func frameWorkConvenienceFile(_ uiFramework: UIFramework, for category: SFSymbolCategory) -> URL? {
+			switch uiFramework {
+			case .appKit:
+				fileURLProvider.frameWorkConvenienceFile(.appKit, for: category)
+			case .uiKit:
+				fileURLProvider.frameWorkConvenienceFile(.uiKit, for: category)
+			case .swiftUI:
+				nil
+			}
 		}
 
 		// MARK: Diagnostics conveniences

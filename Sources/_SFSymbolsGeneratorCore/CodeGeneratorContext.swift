@@ -9,6 +9,7 @@ package extension CodeGenerator {
 	struct Context<Diagnostics: DiagnosticCollector> {
 		let outputDirectory: URL
 		let diagnostics: Diagnostics
+		let _accessModifier: AccessModifier
 		let accessModifier: AccessModifierDescriptor
 		let symbolExtensions: Bool
 		let uiFrameworks: Set<UIFramework>
@@ -26,6 +27,7 @@ package extension CodeGenerator {
 		) {
 			self.outputDirectory = outputDirectory
 			self.diagnostics = diagnostics
+			self._accessModifier = accessModifier
 			self.accessModifier = switch accessModifier {
 			case .public: .public
 			case .package: .package

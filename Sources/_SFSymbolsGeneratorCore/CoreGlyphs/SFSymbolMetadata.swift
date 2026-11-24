@@ -5,20 +5,14 @@
 import Foundation
 
 struct SFSymbolMetadata: Sendable {
-	/// The location of the CoreGlyphs system resources.
-	private static let systemResourceFolder = URL(
-		filePath: "/System/Library/PrivateFrameworks/SFSymbols.framework/Versions/A/Resources/CoreGlyphs.bundle/Contents/Resources",
-		directoryHint: .isDirectory
-	)
+	private let allSymbolsByCategory: [SFSymbolCategory: [SFSymbol]]
 
-	private let allSymbolsByCategory: [Category: [Symbol]]
+	let categories: [SFSymbolCategory]
 
-	let categories: [Category]
-
-	init(resourceFolder resources: URL = Self.systemResourceFolder) throws {
-		let nameAvailability = try readFile(in: resources, "name_availability.plist", to: NameAvailability.self)
-		let symbolRestrictions = try readFile(in: resources, "symbol_restrictions.strings", to: [String: String].self)
-		let nameAliases = try readFile(in: resources, "name_aliases.strings", to: [String: String].self)
+	init(resourceFolder resources: URL = CoreGlyphs.systemResourceFolder) throws {
+		let nameAvailability = try readPlistFile(in: resources, "name_availability.plist", to: NameAvailability.self)
+		let symbolRestrictions = try readPlistFile(in: resources, "symbol_restrictions.strings", to: [String: String].self)
+		let nameAliases = try readPlistFile(in: resources, "name_aliases.strings", to: [String: String].self)
 
 		let categoryResolver = try CategoryResolver(
 			resourceFolder: resources,
@@ -27,19 +21,19 @@ struct SFSymbolMetadata: Sendable {
 
 		// `name_availability.plist` maps each symbol to a release year, which in turn maps to the platform versions
 		let symbols = nameAvailability.symbols
-			.compactMap { (name, year) -> Symbol? in
+			.compactMap { (name, year) -> SFSymbol? in
 				// L10n and RTL are handled by the UI framework
 				guard !Self.hasLanguageCode(name), !Self.hasRightToLeftSpecifier(name) else {
 					return nil
 				}
-				return Symbol(
+				return SFSymbol(
 					name: name,
-					availability: nameAvailability.yearToRelease[year].map(Availability.init),
+					availability: nameAvailability.yearToRelease[year].map(SFSymbol.Availability.init),
 					replacementName: nameAliases[name],
 					replacementAvailability: nameAliases[name]
 						.flatMap { nameAvailability.symbols[$0] }
 						.flatMap { nameAvailability.yearToRelease[$0] }
-						.map(Availability.init),
+						.map(SFSymbol.Availability.init),
 					restriction: symbolRestrictions[name],
 				)
 			}
@@ -51,7 +45,7 @@ struct SFSymbolMetadata: Sendable {
 		categories = categoryResolver.categories
 	}
 
-	func symbols(in category: Category) -> [Symbol] {
+	func symbols(in category: SFSymbolCategory) -> [SFSymbol] {
 		allSymbolsByCategory[category, default: []]
 	}
 
@@ -70,96 +64,15 @@ struct SFSymbolMetadata: Sendable {
 	}
 }
 
-/// Picks the single subject category each symbol is grouped under.
-///
-/// When a symbol resolves to multiple candidate categories it will pick from
-/// most to least specific: the category with the fewest symbols, and then the
-/// plist declared order. The goal is to ensure categories are as small as possible
-/// so generated files are small, viewable in Xcode, and compile fast(-ish).
-///
-/// ``CategoryResolver/nonSubjectCategoryKeys`` stores some known
-/// large categories which overlap with other categories. They are ignored. If
-/// a symbol only existed in one of those categories then it will be added to the
-/// uncategorized group.
-private struct CategoryResolver {
-	/// Symbol categories that will be ignored as they hold large, overlapping portions of the symbols
-	/// and we want to reduce generated file size.
-	private static let nonSubjectCategoryKeys: Set<String> = [
-		"all",
-		"whatsnew",
-		"multicolor",
-		"variable",
-		"draw"
-	]
-	private static let uncategorized = SFSymbolMetadata.Category(key: "uncategorized")
-
-	let categories: [SFSymbolMetadata.Category]
-	private let nameAliases: [String: String]
-	private let categoryLookup: [String: SFSymbolMetadata.Category]
-
-	init(
-		resourceFolder resources: URL,
-		nameAliases: [String: String],
-	) throws {
-		let allCategories = try readFile(in: resources, "categories.plist", to: [SFSymbolMetadata.Category].self)
-		let symbolCategories = try readFile(in: resources, "symbol_categories.plist", to: [String: [String]].self)
-
-		let categories = allCategories.filter { !Self.nonSubjectCategoryKeys.contains($0.key) }
-		let lookup = Dictionary(uniqueKeysWithValues: categories.map { ($0.key, $0) })
-
-		var sizes: [String: Int] = [:]
-		for key in symbolCategories.values.joined() {
-			sizes[key, default: 0] += 1
-		}
-
-		// Fewest symbols first, then plist order
-		let rank: [String: Int] = Dictionary(
-			uniqueKeysWithValues: categories.enumerated()
-				.sorted { (sizes[$0.element.key] ?? 0, $0.offset) < (sizes[$1.element.key] ?? 0, $1.offset) }
-				.enumerated()
-				.map { ($0.element.element.key, $0.offset) }
-		)
-
-		self.categories = categories
-		self.nameAliases = nameAliases
-		self.categoryLookup = symbolCategories.compactMapValues { keys in
-			keys.compactMap { lookup[$0] }.min { rank[$0.key, default: .max] < rank[$1.key, default: .max] }
-		}
-	}
-
-	func category(for name: String) -> SFSymbolMetadata.Category {
-		if let category = categoryLookup[name] {
-			return category
-		}
-		if let alias = nameAliases[name], let category = categoryLookup[alias] {
-			return category
-		}
-		return Self.uncategorized
-	}
-}
-
 // MARK: - Supporting types
 
-extension SFSymbolMetadata {
-	struct Symbol: Hashable, Sendable {
-		let name: String
-		let availability: Availability?
-		let replacementName: String?
-		let replacementAvailability: Availability?
-		let restriction: String?
-		var isDeprecated: Bool { replacementName != nil }
-	}
-
-	struct Category: Hashable, Sendable, Decodable, CustomStringConvertible {
-		let key: String
-
-		var description: String { key }
-
-		var fileNameDescription: String {
-			guard let first = key.first else { return "" }
-			return first.uppercased() + key.dropFirst()
-		}
-	}
+struct SFSymbol: Hashable, Sendable {
+	let name: String
+	let availability: Availability?
+	let replacementName: String?
+	let replacementAvailability: Availability?
+	let restriction: String?
+	var isDeprecated: Bool { replacementName != nil }
 
 	struct Availability: Hashable, Sendable {
 		let iOS: String
@@ -176,7 +89,7 @@ extension SFSymbolMetadata {
 			self.visionOS = visionOS
 		}
 
-		fileprivate init(_ release: YearMapping) {
+		fileprivate init(_ release: SFSymbolMetadata.YearMapping) {
 			self.init(
 				iOS: release.iOS,
 				macOS: release.macOS,
@@ -210,11 +123,4 @@ private extension SFSymbolMetadata {
 		let iOS: String
 		let visionOS: String
 	}
-}
-
-private func readFile<T>(in resources: URL, _ filename: String, to type: T.Type) throws -> T where T: Decodable {
-	let decoder = PropertyListDecoder()
-	let data = try Data(contentsOf: resources.appending(component: filename, directoryHint: .notDirectory))
-	var format: PropertyListSerialization.PropertyListFormat = .openStep
-	return try decoder.decode(T.self, from: data, format: &format)
 }

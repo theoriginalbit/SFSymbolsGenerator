@@ -14,7 +14,7 @@ import SwiftStructureKitTestSupport
 
 		let context = try GeneratorTestContext.make(outputDirectory: resources)
 		let symbols = [
-			SFSymbolMetadata.Symbol(
+			SFSymbol(
 				name: "circle.fill",
 				availability: nil,
 				replacementName: "circle",
@@ -42,7 +42,7 @@ import SwiftStructureKitTestSupport
 
 		let context = try GeneratorTestContext.make(outputDirectory: directory, rawIdentifiers: true)
 		let symbols = [
-			SFSymbolMetadata.Symbol(
+			SFSymbol(
 				name: "a.magnify",
 				availability: .init(iOS: "13.0", macOS: "11.0", tvOS: "14.0", watchOS: "7.0", visionOS: "1.0"),
 				replacementName: "character.magnify",

@@ -8,7 +8,7 @@ import SwiftStructureKit
 enum SFSymbolFrameworkExtensionsFile {
 	static func generate(
 		_ framework: UIFramework,
-		symbols: [SFSymbolMetadata.Symbol],
+		symbols: [SFSymbol],
 		fileName: String,
 		using context: CodeGenerator.SymbolContext<some DiagnosticCollector>,
 	) -> SwiftFile? {
@@ -29,7 +29,7 @@ enum SFSymbolFrameworkExtensionsFile {
 	}
 
 	static func appKitConvenienceAccessorExtension(
-		for symbols: [SFSymbolMetadata.Symbol],
+		for symbols: [SFSymbol],
 		using context: CodeGenerator.SymbolContext<some DiagnosticCollector>,
 	) -> TopLevelDeclarationDescriptor? {
 		guard context.uiFrameworks.contains(.appKit) else {
@@ -75,7 +75,7 @@ enum SFSymbolFrameworkExtensionsFile {
 	}
 
 	static func uiKitConvenienceAccessorExtension(
-		for symbols: [SFSymbolMetadata.Symbol],
+		for symbols: [SFSymbol],
 		using context: CodeGenerator.SymbolContext<some DiagnosticCollector>,
 	) -> TopLevelDeclarationDescriptor? {
 		guard context.uiFrameworks.contains(.uiKit) else {

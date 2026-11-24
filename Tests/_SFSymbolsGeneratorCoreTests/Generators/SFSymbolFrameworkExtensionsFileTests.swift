@@ -13,7 +13,7 @@ import SwiftStructureKitTestSupport
 		defer { try? TempDir.remove(directory) }
 		let context = try GeneratorTestContext.make(outputDirectory: directory, uiFrameworks: [.uiKit])
 		let symbols = [
-			SFSymbolMetadata.Symbol(
+			SFSymbol(
 				name: "circle.fill",
 				availability: nil,
 				replacementName: nil,
@@ -28,7 +28,7 @@ import SwiftStructureKitTestSupport
 			fileName: "SFSymbolResource+Shapes+UIKit.generated.swift",
 			using: context,
 		)
-		let outputURL = try #require(context.frameWorkConvenienceFile(.uiKit, for: SFSymbolMetadata.Category(key: "shapes")))
+		let outputURL = try #require(context.frameWorkConvenienceFile(.uiKit, for: SFSymbolCategory(key: "shapes")))
 
 		try CodeGenerator().renderIfChanged(try #require(file), to: outputURL, using: context)
 		let output = String(decoding: try Data(contentsOf: outputURL), as: UTF8.self)
@@ -41,7 +41,7 @@ import SwiftStructureKitTestSupport
 		defer { try? TempDir.remove(directory) }
 		let context = try GeneratorTestContext.make(outputDirectory: directory, uiFrameworks: [.appKit])
 		let symbols = [
-			SFSymbolMetadata.Symbol(
+			SFSymbol(
 				name: "circle.fill",
 				availability: nil,
 				replacementName: nil,
@@ -56,7 +56,7 @@ import SwiftStructureKitTestSupport
 			fileName: "SFSymbolResource+Shapes+AppKit.generated.swift",
 			using: context,
 		)
-		let outputURL = try #require(context.frameWorkConvenienceFile(.uiKit, for: SFSymbolMetadata.Category(key: "shapes")))
+		let outputURL = try #require(context.frameWorkConvenienceFile(.uiKit, for: SFSymbolCategory(key: "shapes")))
 
 		try CodeGenerator().renderIfChanged(try #require(file), to: outputURL, using: context)
 		let output = String(decoding: try Data(contentsOf: outputURL), as: UTF8.self)
@@ -70,7 +70,7 @@ import SwiftStructureKitTestSupport
 
 		let context = try GeneratorTestContext.make(outputDirectory: directory, uiFrameworks: [.swiftUI])
 		let symbols = [
-			SFSymbolMetadata.Symbol(
+			SFSymbol(
 				name: "circle.fill",
 				availability: nil,
 				replacementName: nil,

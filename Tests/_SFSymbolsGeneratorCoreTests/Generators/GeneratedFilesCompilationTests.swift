@@ -25,7 +25,7 @@ import SwiftStructureKitTestSupport
 
 		let context = try GeneratorTestContext.make(outputDirectory: directory, uiFrameworks: Set(UIFramework.allCases))
 		let symbols = [
-			SFSymbolMetadata.Symbol(
+			SFSymbol(
 				name: "circle.fill",
 				availability: nil,
 				replacementName: nil,
@@ -49,10 +49,10 @@ import SwiftStructureKitTestSupport
 
 		let context = try GeneratorTestContext.make(
 			outputDirectory: directory,
-			uiFrameworks: Set(UIFramework.allCasesSupportingSymbolExtensions)
+			uiFrameworks: Set([UIFramework.appKit, .uiKit])
 		)
 		let symbols = [
-			SFSymbolMetadata.Symbol(
+			SFSymbol(
 				name: "circle.fill",
 				availability: nil,
 				replacementName: nil,
@@ -70,7 +70,7 @@ import SwiftStructureKitTestSupport
 		]
 
 		// generate the extensions
-		for framework in UIFramework.allCasesSupportingSymbolExtensions {
+		for framework in [UIFramework.appKit, .uiKit] {
 			let extensionsURL = try #require(context.frameWorkConvenienceFile(framework, for: .init(key: "shapes")))
 			let file = SFSymbolFrameworkExtensionsFile.generate(
 				framework,
@@ -83,7 +83,7 @@ import SwiftStructureKitTestSupport
 			files.append(extensionsURL)
 		}
 
-		let nonSupportingCases = Set(UIFramework.allCases).subtracting(UIFramework.allCasesSupportingSymbolExtensions)
+		let nonSupportingCases = Set(UIFramework.allCases).subtracting([UIFramework.appKit, .uiKit])
 		for framework in nonSupportingCases {
 			#expect(context.frameWorkConvenienceFile(framework, for: .init(key: "shapes")) == nil)
 		}
@@ -108,7 +108,7 @@ import SwiftStructureKitTestSupport
 	}
 
 	func generateDefinitionsFile(
-		_ symbols: [SFSymbolMetadata.Symbol],
+		_ symbols: [SFSymbol],
 		in directory: URL,
 		using codeGenerator: CodeGenerator,
 		using context: CodeGenerator.SymbolContext<TestDiagnosticCollector>,

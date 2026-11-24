@@ -15,6 +15,10 @@ let package = Package(
 			name: "sfgenerate",
 			targets: ["sfgenerate"],
 		),
+		.plugin(
+			name: "SFSymbolsGeneratorPlugin",
+			targets: ["SFSymbolsGeneratorPlugin"],
+		),
 	],
 	dependencies: [
 		.package(url: "https://github.com/apple/swift-argument-parser", .upToNextMinor(from: "1.8.2")),
@@ -57,6 +61,11 @@ let package = Package(
 		.plugin(
 			name: "GitVersionPlugin",
 			capability: .buildTool(),
+		),
+		.plugin(
+			name: "SFSymbolsGeneratorPlugin",
+			capability: .buildTool(),
+			dependencies: ["sfgenerate"],
 		),
 	],
 )

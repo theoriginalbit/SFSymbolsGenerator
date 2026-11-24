@@ -18,7 +18,7 @@ enum CommonFile {
 		"""
 	}
 
-	static func propertyComment(for symbol: SFSymbolMetadata.Symbol) -> DocCommentDescriptor {
+	static func propertyComment(for symbol: SFSymbol) -> DocCommentDescriptor {
 		guard let restriction = symbol.restriction else {
 			return #"The "\#(symbol.name)" SF Symbol."#
 		}
@@ -30,7 +30,7 @@ enum CommonFile {
 	}
 
 	static func propertyAttributes(
-		for symbol: SFSymbolMetadata.Symbol,
+		for symbol: SFSymbol,
 		using context: CodeGenerator.SymbolContext<some DiagnosticCollector>,
 	) -> [AttributeDescriptor] {
 		if let attributes = deprecatedAvailabilityAttributes(for: symbol, using: context) {
@@ -43,14 +43,14 @@ enum CommonFile {
 	}
 
 	private static func platformVersion(
-		_ keyPath: KeyPath<SFSymbolMetadata.Availability, String>,
-		in availability: SFSymbolMetadata.Availability?
+		_ keyPath: KeyPath<SFSymbol.Availability, String>,
+		in availability: SFSymbol.Availability?
 	) -> PlatformVersion? {
 		guard let availability else { return nil }
 		return PlatformVersion(parsing: availability[keyPath: keyPath])
 	}
 
-	private static func availabilityAttributes(for symbol: SFSymbolMetadata.Symbol) -> [AttributeDescriptor]? {
+	private static func availabilityAttributes(for symbol: SFSymbol) -> [AttributeDescriptor]? {
 		guard let availability = symbol.availability,
 			  let iOS = platformVersion(\.iOS, in: availability),
 			  let macOS = platformVersion(\.macOS, in: availability),
@@ -63,12 +63,12 @@ enum CommonFile {
 		))]
 	}
 
-	private static var platformsToAvailability: [(PlatformName, KeyPath<SFSymbolMetadata.Availability, String>)] {
+	private static var platformsToAvailability: [(PlatformName, KeyPath<SFSymbol.Availability, String>)] {
 		[(.iOS, \.iOS), (.macOS, \.macOS), (.watchOS, \.watchOS), (.tvOS, \.tvOS), (.visionOS, \.visionOS)]
 	}
 
 	private static func deprecatedAvailabilityAttributes(
-		for symbol: SFSymbolMetadata.Symbol,
+		for symbol: SFSymbol,
 		using context: CodeGenerator.SymbolContext<some DiagnosticCollector>,
 	) -> [AttributeDescriptor]? {
 		guard let replacementName = symbol.replacementName else { return nil }

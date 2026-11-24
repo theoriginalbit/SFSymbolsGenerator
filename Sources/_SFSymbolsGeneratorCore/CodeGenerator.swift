@@ -18,6 +18,16 @@ package struct CodeGenerator {
 			withIntermediateDirectories: true,
 		)
 
+		context.info("Output directory:      \(context.outputDirectory.path())")
+		context.info("Enabled UI frameworks: \(context.uiFrameworks.map(\.rawValue).joined(separator: ","))")
+		context.info("Access modifier:       \(context._accessModifier.rawValue)")
+		context.info("Symbol extensions:     \(context.symbolExtensions)")
+		context.info("Raw identifiers:       \(context.rawIdentifiers)")
+
+		if context.diagnostics.mode == .cli {
+			print()
+		}
+
 		informUserAboutFilesThatWillBeSkippedBasedOnContext(context)
 
 		let context = SymbolContext(context: context, metadata: metadata)
@@ -57,7 +67,7 @@ package struct CodeGenerator {
 	}
 
 	func generateSFSymbolFiles(
-		for category: SFSymbolMetadata.Category,
+		for category: SFSymbolCategory,
 		using context: SymbolContext<some DiagnosticCollector>,
 	) throws -> (filesCount: Int, symbolsCount: Int) {
 		let symbols = context.metadata.symbols(in: category)
@@ -67,7 +77,7 @@ package struct CodeGenerator {
 		filesCount += try generateSFSymbolDefinitionsFile(symbols, for: category, using: context)
 		// always attempt all compatible UI frameworks, let the generate function determine how
 		// to write it based on context.uiFrameworks
-		for framework in UIFramework.allCasesSupportingSymbolExtensions {
+		for framework in UIFramework.allCases {
 			filesCount += try generateSFSymbolFrameworkExtensionsFile(framework, symbols: symbols, for: category, using: context)
 		}
 
@@ -75,8 +85,8 @@ package struct CodeGenerator {
 	}
 
 	func generateSFSymbolDefinitionsFile(
-		_ symbols: [SFSymbolMetadata.Symbol],
-		for category: SFSymbolMetadata.Category,
+		_ symbols: [SFSymbol],
+		for category: SFSymbolCategory,
 		using context: SymbolContext<some DiagnosticCollector>,
 	) throws -> Int {
 		let output = context.categoryFile(for: category)
@@ -87,8 +97,8 @@ package struct CodeGenerator {
 
 	func generateSFSymbolFrameworkExtensionsFile(
 		_ framework: UIFramework,
-		symbols: [SFSymbolMetadata.Symbol],
-		for category: SFSymbolMetadata.Category,
+		symbols: [SFSymbol],
+		for category: SFSymbolCategory,
 		using context: SymbolContext<some DiagnosticCollector>,
 	) throws -> Int {
 		guard let output = context.frameWorkConvenienceFile(framework, for: category) else {
@@ -140,12 +150,12 @@ package struct CodeGenerator {
 		context.info("Written to \(outputURL.path())")
 	}
 
-	private func informUserAboutFilesThatWillBeSkippedBasedOnContext(_ context: Context<some DiagnosticCollector>,) {
+	private func informUserAboutFilesThatWillBeSkippedBasedOnContext(_ context: Context<some DiagnosticCollector>) {
 		if context.symbolExtensions, context.uiFrameworks.contains(.swiftUI) {
 			context.info("SwiftUI Image will not have symbol conveniences (e.g. Image.circleFilled) generated, use explicit Image(system: .circleFilled) instead")
 		}
 
-		for framework in UIFramework.allCasesSupportingSymbolExtensions {
+		for framework in [UIFramework.appKit, .uiKit] {
 			guard !context.symbolExtensions || !context.uiFrameworks.contains(framework) else {
 				continue
 			}

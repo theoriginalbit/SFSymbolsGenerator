@@ -7,8 +7,8 @@ import SwiftStructureKit
 
 enum SFSymbolDefinitionsFile {
 	static func generate(
-		_ symbols: [SFSymbolMetadata.Symbol],
-		for category: SFSymbolMetadata.Category,
+		_ symbols: [SFSymbol],
+		for category: SFSymbolCategory,
 		fileName: String,
 		using context: CodeGenerator.SymbolContext<some DiagnosticCollector>,
 	) -> SwiftFile {
