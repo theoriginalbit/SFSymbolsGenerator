@@ -23,7 +23,7 @@ import UIKit
 @available(watchOS, unavailable)
 public extension UIKit.UIImage {
     /// Initialize a `UIImage` with an SF Symbol resource.
-    convenience init(system resource: SFSymbolResource) {
+    convenience init(systemSymbol resource: SFSymbolResource) {
 #if !os(watchOS)
         self.init(systemName: resource.systemName)
 #else

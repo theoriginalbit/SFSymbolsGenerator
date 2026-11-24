@@ -22,7 +22,7 @@ import SwiftUI
 
 public extension SwiftUI.Image {
     /// Initialize an `Image` with an SF Symbol resource.
-    init(system resource: SFSymbolResource) {
+    init(systemSymbol resource: SFSymbolResource) {
         self.init(systemName: resource.systemName)
     }
 }

@@ -67,7 +67,7 @@ enum SFSymbolResourceFile {
 				FunctionDescriptor.initializer(
 					comment: "Initialize an `NSImage` with an SF Symbol resource.",
 					parameters: ParametersList {
-						Parameter("resource", label: "system", type: .identifier(CommonFile.resourceStructName))
+						Parameter("resource", label: CommonFile.systemSymbolLabel, type: .identifier(CommonFile.resourceStructName))
 						Parameter("accessibilityDescription", type: .optional(.string))
 					}) {
 						StatementDescriptor.assignment(
@@ -104,7 +104,7 @@ enum SFSymbolResourceFile {
 					comment: "Initialize a `UIImage` with an SF Symbol resource.",
 					convenience: true,
 					parameters: ParametersList {
-						Parameter("resource", label: "system", type: .identifier(CommonFile.resourceStructName))
+						Parameter("resource", label: CommonFile.systemSymbolLabel, type: .identifier(CommonFile.resourceStructName))
 					}) {
 						StatementDescriptor.compilerControl(.conditional(
 							.if(.raw("!os(watchOS)")) {
@@ -134,7 +134,7 @@ enum SFSymbolResourceFile {
 				FunctionDescriptor.initializer(
 					comment: "Initialize an `Image` with an SF Symbol resource.",
 					parameters: ParametersList {
-						Parameter("resource", label: "system", type: .identifier(CommonFile.resourceStructName))
+						Parameter("resource", label: CommonFile.systemSymbolLabel, type: .identifier(CommonFile.resourceStructName))
 					}) {
 						ExpressionDescriptor.functionCall("self.init") {
 							Argument(label: CommonFile.systemNameProperty, value: .memberAccess("resource", CommonFile.systemNameProperty))

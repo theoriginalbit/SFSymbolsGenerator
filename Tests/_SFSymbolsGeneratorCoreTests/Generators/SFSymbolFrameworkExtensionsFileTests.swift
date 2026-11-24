@@ -10,13 +10,14 @@ import SwiftStructureKitTestSupport
 @Suite(.tags(.renderer)) struct SFSymbolFrameworkExtensionsFileTests {
 	@Test func `generates UIKit convenience accessors for valid symbols`() throws {
 		let directory = try TempDir.create()
-		defer { try? FileManager.default.removeItem(at: directory) }
+		defer { try? TempDir.remove(directory) }
 		let context = try GeneratorTestContext.make(outputDirectory: directory, uiFrameworks: [.uiKit])
 		let symbols = [
 			SFSymbolMetadata.Symbol(
 				name: "circle.fill",
 				availability: nil,
 				replacementName: nil,
+				replacementAvailability: nil,
 				restriction: nil,
 			),
 		]
@@ -37,13 +38,14 @@ import SwiftStructureKitTestSupport
 
 	@Test func `generates AppKit convenience accessors for valid symbols`() throws {
 		let directory = try TempDir.create()
-		defer { try? FileManager.default.removeItem(at: directory) }
+		defer { try? TempDir.remove(directory) }
 		let context = try GeneratorTestContext.make(outputDirectory: directory, uiFrameworks: [.appKit])
 		let symbols = [
 			SFSymbolMetadata.Symbol(
 				name: "circle.fill",
 				availability: nil,
 				replacementName: nil,
+				replacementAvailability: nil,
 				restriction: nil,
 			),
 		]
@@ -64,7 +66,7 @@ import SwiftStructureKitTestSupport
 
 	@Test func `SwiftUI extensions do not generate even if it is a requested framework`() throws {
 		let directory = try TempDir.create()
-		defer { try? FileManager.default.removeItem(at: directory) }
+		defer { try? TempDir.remove(directory) }
 
 		let context = try GeneratorTestContext.make(outputDirectory: directory, uiFrameworks: [.swiftUI])
 		let symbols = [
@@ -72,6 +74,7 @@ import SwiftStructureKitTestSupport
 				name: "circle.fill",
 				availability: nil,
 				replacementName: nil,
+				replacementAvailability: nil,
 				restriction: nil,
 			),
 		]

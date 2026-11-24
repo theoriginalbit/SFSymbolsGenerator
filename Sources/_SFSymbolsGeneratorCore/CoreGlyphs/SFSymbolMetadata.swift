@@ -36,6 +36,10 @@ struct SFSymbolMetadata: Sendable {
 					name: name,
 					availability: nameAvailability.yearToRelease[year].map(Availability.init),
 					replacementName: nameAliases[name],
+					replacementAvailability: nameAliases[name]
+						.flatMap { nameAvailability.symbols[$0] }
+						.flatMap { nameAvailability.yearToRelease[$0] }
+						.map(Availability.init),
 					restriction: symbolRestrictions[name],
 				)
 			}
@@ -141,6 +145,7 @@ extension SFSymbolMetadata {
 		let name: String
 		let availability: Availability?
 		let replacementName: String?
+		let replacementAvailability: Availability?
 		let restriction: String?
 		var isDeprecated: Bool { replacementName != nil }
 	}
@@ -163,12 +168,22 @@ extension SFSymbolMetadata {
 		let watchOS: String
 		let visionOS: String
 
+		init(iOS: String, macOS: String, tvOS: String, watchOS: String, visionOS: String) {
+			self.iOS = iOS
+			self.macOS = macOS
+			self.tvOS = tvOS
+			self.watchOS = watchOS
+			self.visionOS = visionOS
+		}
+
 		fileprivate init(_ release: YearMapping) {
-			self.iOS = release.iOS
-			self.macOS = release.macOS
-			self.tvOS = release.tvOS
-			self.watchOS = release.watchOS
-			self.visionOS = release.visionOS
+			self.init(
+				iOS: release.iOS,
+				macOS: release.macOS,
+				tvOS: release.tvOS,
+				watchOS: release.watchOS,
+				visionOS: release.visionOS,
+			)
 		}
 	}
 }

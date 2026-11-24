@@ -10,7 +10,7 @@ import SwiftStructureKitTestSupport
 @Suite(.tags(.compiler)) struct GeneratedFilesCompilationTests {
 	@Test func `generated resource file compiles`() async throws {
 		let directory = try TempDir.create()
-		defer { try? FileManager.default.removeItem(at: directory) }
+		defer { try? TempDir.remove(directory) }
 
 		let generator = CodeGenerator()
 		let context = try GeneratorTestContext.make(outputDirectory: directory, uiFrameworks: Set(UIFramework.allCases))
@@ -21,7 +21,7 @@ import SwiftStructureKitTestSupport
 
 	@Test func `generated symbol definitions file compiles`() async throws {
 		let directory = try TempDir.create()
-		defer { try? FileManager.default.removeItem(at: directory) }
+		defer { try? TempDir.remove(directory) }
 
 		let context = try GeneratorTestContext.make(outputDirectory: directory, uiFrameworks: Set(UIFramework.allCases))
 		let symbols = [
@@ -29,6 +29,7 @@ import SwiftStructureKitTestSupport
 				name: "circle.fill",
 				availability: nil,
 				replacementName: nil,
+				replacementAvailability: nil,
 				restriction: nil,
 			),
 		]
@@ -44,7 +45,7 @@ import SwiftStructureKitTestSupport
 
 	@Test func `generated framework extensions files compile`() async throws {
 		let directory = try TempDir.create()
-		defer { try? FileManager.default.removeItem(at: directory) }
+		defer { try? TempDir.remove(directory) }
 
 		let context = try GeneratorTestContext.make(
 			outputDirectory: directory,
@@ -55,6 +56,7 @@ import SwiftStructureKitTestSupport
 				name: "circle.fill",
 				availability: nil,
 				replacementName: nil,
+				replacementAvailability: nil,
 				restriction: nil,
 			),
 		]

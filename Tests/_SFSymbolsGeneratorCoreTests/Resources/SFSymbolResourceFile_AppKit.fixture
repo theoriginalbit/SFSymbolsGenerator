@@ -27,7 +27,7 @@ extension AppKit.NSImage: _SFResourceInitProtocol {}
 @available(macCatalyst, unavailable)
 public extension _SFResourceInitProtocol {
     /// Initialize an `NSImage` with an SF Symbol resource.
-    init(system resource: SFSymbolResource, accessibilityDescription: Optional<String>) {
+    init(systemSymbol resource: SFSymbolResource, accessibilityDescription: Optional<String>) {
         self = AppKit.NSImage(systemSymbolName: resource.systemName, accessibilityDescription: accessibilityDescription)! as! Self
     }
 }

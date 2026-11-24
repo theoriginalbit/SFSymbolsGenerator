@@ -10,7 +10,7 @@ import SwiftStructureKitTestSupport
 @Suite(.tags(.renderer)) struct SFSymbolResourceFileTests {
 	@Test(arguments: Self.permutations) func `generates convenience initializers only for requested frameworks`(_ input: TestInput) throws {
 		let directory = try TempDir.create()
-		defer { try? FileManager.default.removeItem(at: directory) }
+		defer { try? TempDir.remove(directory) }
 
 		let context = try GeneratorTestContext.make(outputDirectory: directory, uiFrameworks: Set(input.uiFrameworks))
 		let file = SFSymbolResourceFile.generate(

@@ -8,6 +8,5 @@ public extension SFSymbolResource {
     /// The "circle.fill" SF Symbol.
     ///
     /// - Important: Use the replacement symbol.
-    @available(*, deprecated, renamed: "circle", message: "This name has been deprecated. You should use a more modern name if your app does not need to support older platforms.")
     static let circleFill: SFSymbolResource = SFSymbolResource(systemName: "circle.fill")
 }

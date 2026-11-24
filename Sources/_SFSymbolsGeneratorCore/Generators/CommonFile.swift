@@ -8,6 +8,7 @@ import SwiftStructureKit
 enum CommonFile {
 	static let resourceStructName = "SFSymbolResource"
 	static let systemNameProperty = "systemName"
+	static let systemSymbolLabel = "systemSymbol"
 
 	static func fileHeader(fileName: String) -> FileHeaderCommentDescriptor {
 		"""
@@ -32,66 +33,79 @@ enum CommonFile {
 		for symbol: SFSymbolMetadata.Symbol,
 		using context: CodeGenerator.SymbolContext<some DiagnosticCollector>,
 	) -> [AttributeDescriptor] {
-		var result: [AttributeDescriptor] = []
-		if let attribute = availabilityAttribute(for: symbol) {
-			result.append(attribute)
+		if let attributes = deprecatedAvailabilityAttributes(for: symbol, using: context) {
+			return attributes
 		}
-		if let attribute = deprecationAttribute(for: symbol, using: context) {
-			result.append(attribute)
+		if let attributes = availabilityAttributes(for: symbol) {
+			return attributes
 		}
-		return result
-	}
-
-	private static func availabilityAttribute(for symbol: SFSymbolMetadata.Symbol) -> AttributeDescriptor? {
-		guard let iOS = platformVersion(\.iOS, from: symbol),
-			  let macOS = platformVersion(\.macOS, from: symbol),
-			  let watchOS = platformVersion(\.watchOS, from: symbol),
-			  let tvOS = platformVersion(\.tvOS, from: symbol),
-			  let visionOS = platformVersion(\.visionOS, from: symbol)
-				else { return nil }
-		return .available(
-			AvailabilityArgumentsList(
-				iOS: iOS,
-				macOS: macOS,
-				watchOS: watchOS,
-				tvOS: tvOS,
-				visionOS: visionOS
-			)
-		)
+		return []
 	}
 
 	private static func platformVersion(
 		_ keyPath: KeyPath<SFSymbolMetadata.Availability, String>,
-		from symbol: SFSymbolMetadata.Symbol
+		in availability: SFSymbolMetadata.Availability?
 	) -> PlatformVersion? {
-		guard let availability = symbol.availability?[keyPath: keyPath] else {
-			return nil
-		}
-		return PlatformVersion(parsing: availability)
+		guard let availability else { return nil }
+		return PlatformVersion(parsing: availability[keyPath: keyPath])
 	}
 
-	private static func deprecationAttribute(
+	private static func availabilityAttributes(for symbol: SFSymbolMetadata.Symbol) -> [AttributeDescriptor]? {
+		guard let availability = symbol.availability,
+			  let iOS = platformVersion(\.iOS, in: availability),
+			  let macOS = platformVersion(\.macOS, in: availability),
+			  let watchOS = platformVersion(\.watchOS, in: availability),
+			  let tvOS = platformVersion(\.tvOS, in: availability),
+			  let visionOS = platformVersion(\.visionOS, in: availability)
+		else { return nil }
+		return [.available(AvailabilityArgumentsList(
+			iOS: iOS, macOS: macOS, watchOS: watchOS, tvOS: tvOS, visionOS: visionOS
+		))]
+	}
+
+	private static var platformsToAvailability: [(PlatformName, KeyPath<SFSymbolMetadata.Availability, String>)] {
+		[(.iOS, \.iOS), (.macOS, \.macOS), (.watchOS, \.watchOS), (.tvOS, \.tvOS), (.visionOS, \.visionOS)]
+	}
+
+	private static func deprecatedAvailabilityAttributes(
 		for symbol: SFSymbolMetadata.Symbol,
 		using context: CodeGenerator.SymbolContext<some DiagnosticCollector>,
-	) -> AttributeDescriptor? {
+	) -> [AttributeDescriptor]? {
 		guard let replacementName = symbol.replacementName else { return nil }
 
-		guard let swiftName = context.swiftRenameParameter(for: replacementName) else {
-			// BUG: SE-0451 did not support raw identifiers in renamed attribute
-			//   Fix is expected in Swift 6.5 but for now we must handle
-			//   Ref: https://forums.swift.org/t/se-0451-vs-renamed-attributes/86268
-			return .available(
-				.wildcard,
-				.deprecated,
-				.message("This name has been replaced with `\(replacementName)`. You should use this name if your app does not need to support older platforms.")
-			)
-		}
+		let swiftName = context.swiftRenameParameter(for: replacementName)
+		let message = deprecationMessage(for: replacementName, swiftName: swiftName)
 
-		return .available(
-			.wildcard,
-			.deprecated,
-			.renamed(swiftName),
-			.message("This name has been deprecated. You should use a more modern name if your app does not need to support older platforms.")
-		)
+		// Generate one @attribute per platform so it can include introduced and deprecated versions.
+		var results: [AttributeDescriptor] = []
+		for (platform, keyPath) in platformsToAvailability {
+			guard let introduced = platformVersion(keyPath, in: symbol.availability),
+				  let deprecated = platformVersion(keyPath, in: symbol.replacementAvailability)
+			else { return nil }
+			results.append(.available(AvailabilityArgumentsList {
+				AvailabilityArgumentDescriptor.platform(platform)
+				if introduced != deprecated {
+					AvailabilityArgumentDescriptor.introduced(introduced)
+					AvailabilityArgumentDescriptor.deprecated(deprecated)
+				} else {
+					AvailabilityArgumentDescriptor.deprecated
+				}
+				// BUG: SE-0451 did not support raw identifiers in renamed attribute (fix is expected in Swift 6.5)
+				// Ref: https://forums.swift.org/t/se-0451-vs-renamed-attributes/86268
+				if let swiftName {
+					AvailabilityArgumentDescriptor.renamed(swiftName)
+				}
+				AvailabilityArgumentDescriptor.message(message)
+			}))
+		}
+		return results
+	}
+
+	private static func deprecationMessage(for replacementName: String, swiftName: String?) -> String {
+		if swiftName == nil {
+			"This name has been replaced with `\(replacementName)`. You should use this name if your app does not need to support older platforms."
+		} else {
+			"This name has been deprecated. You should use a more modern name if your app does not need to support older platforms."
+		}
 	}
 }

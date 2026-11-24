@@ -9,6 +9,7 @@ enum GeneratorTestContext {
 	static func make(
 		outputDirectory: URL,
 		uiFrameworks: Set<UIFramework> = [],
+		rawIdentifiers: Bool = false,
 	) throws -> CodeGenerator.SymbolContext<TestDiagnosticCollector> {
 		try writePlist(
 			[
@@ -31,7 +32,7 @@ enum GeneratorTestContext {
 				accessModifier: .public,
 				symbolExtensions: true,
 				uiFrameworks: uiFrameworks,
-				rawIdentifiers: false,
+				rawIdentifiers: rawIdentifiers,
 				isRunningAsBuildTool: false,
 			),
 			metadata: metadata,

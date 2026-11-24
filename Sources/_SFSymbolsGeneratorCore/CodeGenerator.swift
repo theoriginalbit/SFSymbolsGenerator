@@ -6,9 +6,6 @@ import Foundation
 import SwiftStructureKit
 
 package struct CodeGenerator {
-	private static let resourceStructName = "SFSymbolResource"
-	private static let systemNameProperty = "systemName"
-
 	package init() {}
 
 	package func run(using context: Context<some DiagnosticCollector>) throws {

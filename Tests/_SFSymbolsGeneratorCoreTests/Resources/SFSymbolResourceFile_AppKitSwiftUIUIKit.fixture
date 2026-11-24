@@ -27,7 +27,7 @@ extension AppKit.NSImage: _SFResourceInitProtocol {}
 @available(macCatalyst, unavailable)
 public extension _SFResourceInitProtocol {
     /// Initialize an `NSImage` with an SF Symbol resource.
-    init(system resource: SFSymbolResource, accessibilityDescription: Optional<String>) {
+    init(systemSymbol resource: SFSymbolResource, accessibilityDescription: Optional<String>) {
         self = AppKit.NSImage(systemSymbolName: resource.systemName, accessibilityDescription: accessibilityDescription)! as! Self
     }
 }
@@ -39,7 +39,7 @@ import UIKit
 @available(watchOS, unavailable)
 public extension UIKit.UIImage {
     /// Initialize a `UIImage` with an SF Symbol resource.
-    convenience init(system resource: SFSymbolResource) {
+    convenience init(systemSymbol resource: SFSymbolResource) {
 #if !os(watchOS)
         self.init(systemName: resource.systemName)
 #else
@@ -54,7 +54,7 @@ import SwiftUI
 
 public extension SwiftUI.Image {
     /// Initialize an `Image` with an SF Symbol resource.
-    init(system resource: SFSymbolResource) {
+    init(systemSymbol resource: SFSymbolResource) {
         self.init(systemName: resource.systemName)
     }
 }

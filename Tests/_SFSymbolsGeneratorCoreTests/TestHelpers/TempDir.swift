@@ -10,4 +10,8 @@ enum TempDir {
 		try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
 		return tempDir
 	}
+
+	static func remove(_ url: URL) throws {
+		try FileManager.default.removeItem(at: url)
+	}
 }

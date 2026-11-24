@@ -57,7 +57,7 @@ enum SFSymbolFrameworkExtensionsFile {
 							StatementDescriptor.compilerControl(.conditional(
 								.if(.raw("!targetEnvironment(macCatalyst)")) {
 									ExpressionDescriptor.functionCall("self.init") {
-										Argument(label: "system", value: .memberAccess(nil, identifier))
+										Argument(label: CommonFile.systemSymbolLabel, value: .memberAccess(nil, identifier))
 										Argument(label: "accessibilityDescription", value: .identifier("accessibilityDescription"))
 									}
 								} else: {
@@ -100,7 +100,7 @@ enum SFSymbolFrameworkExtensionsFile {
 							StatementDescriptor.compilerControl(.conditional(
 								.if(.raw("!os(watchOS)")) {
 									ExpressionDescriptor.functionCall("self.init") {
-										Argument(label: "system", value: .memberAccess(nil, identifier))
+										Argument(label: CommonFile.systemSymbolLabel, value: .memberAccess(nil, identifier))
 									}
 								} else: {
 									ExpressionDescriptor.functionCall("self.init")

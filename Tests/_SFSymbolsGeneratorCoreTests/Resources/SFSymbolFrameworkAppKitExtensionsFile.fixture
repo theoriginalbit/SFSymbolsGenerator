@@ -12,7 +12,7 @@ public extension AppKit.NSImage {
     /// The "circle.fill" SF Symbol.
     static func circleFill(accessibilityDescription: Optional<String> = nil) -> AppKit.NSImage {
 #if !targetEnvironment(macCatalyst)
-        self.init(system: .circleFill, accessibilityDescription: accessibilityDescription)
+        self.init(systemSymbol: .circleFill, accessibilityDescription: accessibilityDescription)
 #else
         self.init()
 #endif
