@@ -48,7 +48,7 @@ struct GenerateCommand: ParsableCommand {
 			"Adjusts the diagnostic message output",
 		),
 	)
-	private var diagnosticMode: DiagnosticMode = .cli
+	private var diagnosticMode: DiagnosticMode = .cli()
 
 	@Flag(
 		inversion: .prefixedEnableDisable,
@@ -65,15 +65,12 @@ struct GenerateCommand: ParsableCommand {
 	)
 	private var isRunningAsBuildTool: Bool = false
 
-	@Flag(
-		name: .shortAndLong,
-		help: "Increase verbosity (-vvv).",
-	)
-	private var verbose: Int
+	@Flag(name: .shortAndLong, help: "Enable verbose output.")
+	private var verbose: Bool = false
 
 	func run() throws {
 		do {
-			let diagnostics = StandardDiagnosticCollector(mode: diagnosticMode, verbosity: verbose)
+			let diagnostics = DiagnosticCollector(mode: diagnosticMode, verbose: verbose)
 			let outputDirectory = try resolvedOutputDirectory(diagnostics: diagnostics)
 
 			let context = CodeGenerator.Context(
@@ -95,13 +92,12 @@ struct GenerateCommand: ParsableCommand {
 		}
 	}
 
-	private func resolvedOutputDirectory(diagnostics: some DiagnosticCollector) throws(GeneratorError) -> URL {
+	private func resolvedOutputDirectory(diagnostics: DiagnosticCollector<some DiagnosticOutput>) throws(GeneratorError) -> URL {
 		if let outputDirectory {
 			return outputDirectory
 		}
 		if isRunningAsBuildTool {
-			diagnostics.error("internal error: running as build tool but output file path is missing.")
-			throw .specifyOutputDirectory
+			diagnostics.fault("internal error: running as build tool but output file path is missing.")
 		}
 		return URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
 	}

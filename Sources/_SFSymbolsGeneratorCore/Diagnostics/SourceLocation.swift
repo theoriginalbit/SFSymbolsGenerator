@@ -17,4 +17,10 @@ package struct SourceLocation {
 
 	/// The column within the file. Indexes start at `1`.
 	package let column: Int?
+
+	package init(file: URL = URL(filePath: #filePath), line: Int? = #line, column: Int? = #column) {
+		self.file = file
+		self.line = line
+		self.column = column
+	}
 }

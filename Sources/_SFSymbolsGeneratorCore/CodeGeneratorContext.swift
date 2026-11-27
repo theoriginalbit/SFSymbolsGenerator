@@ -2,13 +2,13 @@
 // Copyright © 2026 SFSymbolsGenerator. All rights reserved.
 //
 
-import struct Foundation.URL
+import Foundation
 import enum SwiftStructureKit.AccessModifierDescriptor
 
 package extension CodeGenerator {
-	struct Context<Diagnostics: DiagnosticCollector> {
+	struct Context<Output: DiagnosticOutput> {
 		let outputDirectory: URL
-		let diagnostics: Diagnostics
+		let diagnostics: DiagnosticCollector<Output>
 		let _accessModifier: AccessModifier
 		let accessModifier: AccessModifierDescriptor
 		let symbolExtensions: Bool
@@ -18,7 +18,7 @@ package extension CodeGenerator {
 
 		package init(
 			outputDirectory: URL,
-			diagnostics: Diagnostics,
+			diagnostics: DiagnosticCollector<Output>,
 			accessModifier: AccessModifier,
 			symbolExtensions: Bool,
 			uiFrameworks: Set<UIFramework>,
@@ -42,24 +42,19 @@ package extension CodeGenerator {
 }
 
 package extension CodeGenerator.Context {
-	func note(_ message: String, location: SourceLocation? = nil) {
-		diagnostics.note(message, location: location)
+	func note(_ message: DiagnosticMessage, at location: SourceLocation? = nil) {
+		diagnostics.note(message, at: location)
 	}
 
-	func info(_ message: String, location: SourceLocation? = nil) {
-		diagnostics.info(message, location: location)
+	func warning(_ message: DiagnosticMessage, at location: SourceLocation? = nil) {
+		diagnostics.warning(message, at: location)
 	}
 
-	func warning(_ message: String, location: SourceLocation? = nil) {
-		diagnostics.warning(message, location: location)
+	func error(_ message: DiagnosticMessage, location: SourceLocation? = nil) {
+		diagnostics.error(message, at: location)
 	}
 
-	func error(_ message: String, location: SourceLocation? = nil) {
-		diagnostics.error(message, location: location)
-	}
-
-	/// - Important: Emitting a fault will output the diagnostic and immediately exit the process
-	func fault(_ message: String, location: SourceLocation? = nil) {
-		diagnostics.fault(message, location: location)
+	func fault(_ message: DiagnosticMessage, location: SourceLocation? = nil, exitCode: Int32 = EXIT_FAILURE) -> Never {
+		diagnostics.fault(message, at: location)
 	}
 }

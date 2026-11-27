@@ -10,7 +10,7 @@ enum SFSymbolFrameworkExtensionsFile {
 		_ framework: UIFramework,
 		symbols: [SFSymbol],
 		fileName: String,
-		using context: CodeGenerator.SymbolContext<some DiagnosticCollector>,
+		using context: CodeGenerator.SymbolContext<some DiagnosticOutput>,
 	) -> SwiftFile? {
 		let fileBody: TopLevelDeclarationDescriptor?
 		switch framework {
@@ -30,7 +30,7 @@ enum SFSymbolFrameworkExtensionsFile {
 
 	static func appKitConvenienceAccessorExtension(
 		for symbols: [SFSymbol],
-		using context: CodeGenerator.SymbolContext<some DiagnosticCollector>,
+		using context: CodeGenerator.SymbolContext<some DiagnosticOutput>,
 	) -> TopLevelDeclarationDescriptor? {
 		guard context.uiFrameworks.contains(.appKit) else {
 			return nil
@@ -43,40 +43,47 @@ enum SFSymbolFrameworkExtensionsFile {
 
 			ExtensionDescriptor(.identifier("AppKit.NSImage"), accessModifier: context.accessModifier, attributes: attributes) {
 				for symbol in symbols {
-					if let identifier = context.swiftIdentifier(for: symbol) {
-						FunctionDescriptor.function(
-							comment: CommonFile.propertyComment(for: symbol),
-							attributes: CommonFile.propertyAttributes(for: symbol, using: context),
-							name: identifier,
-							returns: .identifier("AppKit.NSImage"),
-							isStatic: true,
-							parameters: ParametersList {
-								Parameter("accessibilityDescription", type: .optional(.string), defaultValue: .literal(.nil))
-							},
-						) {
-							StatementDescriptor.compilerControl(.conditional(
-								.if(.raw("!targetEnvironment(macCatalyst)")) {
-									ExpressionDescriptor.functionCall("self.init") {
-										Argument(label: CommonFile.systemSymbolLabel, value: .memberAccess(nil, identifier))
-										Argument(label: "accessibilityDescription", value: .identifier("accessibilityDescription"))
-									}
-								} else: {
-									ExpressionDescriptor.functionCall("self.init")
-								}
-							))
-						}
-					} else {
-						context.fault("internal error: could not generate valid identifier for symbol \(symbol.name)")
-					}
+					appKitConvenienceFunction(for: symbol, using: context)
 				}
 			}
 		}
 		return .compilerControl(.conditional(.if(conditionalImport)))
 	}
 
+	static func appKitConvenienceFunction(
+		for symbol: SFSymbol,
+		using context: CodeGenerator.SymbolContext<some DiagnosticOutput>
+	) -> DeclarationDescriptor? {
+		if let identifier = context.swiftIdentifier(for: symbol) {
+			DeclarationDescriptor.function(
+				comment: CommonFile.propertyComment(for: symbol),
+				attributes: CommonFile.propertyAttributes(for: symbol, using: context),
+				name: identifier,
+				returns: .identifier("AppKit.NSImage"),
+				isStatic: true,
+				parameters: ParametersList {
+					Parameter("accessibilityDescription", type: .optional(.string), defaultValue: .literal(.nil))
+				},
+			) {
+				StatementDescriptor.compilerControl(.conditional(
+					.if(.raw("!targetEnvironment(macCatalyst)")) {
+						ExpressionDescriptor.functionCall("self.init") {
+							Argument(label: CommonFile.systemSymbolLabel, value: .memberAccess(nil, identifier))
+							Argument(label: "accessibilityDescription", value: .identifier("accessibilityDescription"))
+						}
+					} else: {
+						ExpressionDescriptor.functionCall("self.init")
+					}
+				))
+			}
+		} else {
+			context.fault("internal error: could not generate valid identifier for symbol \(symbol.name)")
+		}
+	}
+
 	static func uiKitConvenienceAccessorExtension(
 		for symbols: [SFSymbol],
-		using context: CodeGenerator.SymbolContext<some DiagnosticCollector>,
+		using context: CodeGenerator.SymbolContext<some DiagnosticOutput>,
 	) -> TopLevelDeclarationDescriptor? {
 		guard context.uiFrameworks.contains(.uiKit) else {
 			return nil
@@ -89,30 +96,39 @@ enum SFSymbolFrameworkExtensionsFile {
 
 			ExtensionDescriptor(.identifier("UIKit.UIImage"), accessModifier: context.accessModifier, attributes: attributes) {
 				for symbol in symbols {
-					if let identifier = context.swiftIdentifier(for: symbol) {
-						PropertyDescriptor.computed(
-							identifier,
-							comment: CommonFile.propertyComment(for: symbol),
-							attributes: CommonFile.propertyAttributes(for: symbol, using: context),
-							isStatic: true,
-							type: .identifier("UIKit.UIImage"),
-						) {
-							StatementDescriptor.compilerControl(.conditional(
-								.if(.raw("!os(watchOS)")) {
-									ExpressionDescriptor.functionCall("self.init") {
-										Argument(label: CommonFile.systemSymbolLabel, value: .memberAccess(nil, identifier))
-									}
-								} else: {
-									ExpressionDescriptor.functionCall("self.init")
-								}
-							))
-						}
-					} else {
-						context.fault("internal error: could not generate valid identifier for symbol \(symbol.name)")
-					}
+					uiKitConvenienceProperty(for: symbol, using: context)
 				}
 			}
 		}
 		return .compilerControl(.conditional(.if(conditionalImport)))
+	}
+
+	static func uiKitConvenienceProperty(
+		for symbol: SFSymbol,
+		using context: CodeGenerator.SymbolContext<some DiagnosticOutput>
+	) -> DeclarationDescriptor? {
+		if let identifier = context.swiftIdentifier(for: symbol) {
+			DeclarationDescriptor.property(
+				.computed(
+					identifier,
+					comment: CommonFile.propertyComment(for: symbol),
+					attributes: CommonFile.propertyAttributes(for: symbol, using: context),
+					isStatic: true,
+					type: .identifier("UIKit.UIImage"),
+				) {
+					StatementDescriptor.compilerControl(.conditional(
+						.if(.raw("!os(watchOS)")) {
+							ExpressionDescriptor.functionCall("self.init") {
+								Argument(label: CommonFile.systemSymbolLabel, value: .memberAccess(nil, identifier))
+							}
+						} else: {
+							ExpressionDescriptor.functionCall("self.init")
+						}
+					))
+				}
+			)
+		} else {
+			context.fault("internal error: could not generate valid identifier for symbol \(symbol.name)")
+		}
 	}
 }

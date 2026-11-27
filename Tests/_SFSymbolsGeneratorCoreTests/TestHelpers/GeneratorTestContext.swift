@@ -6,11 +6,12 @@ import Foundation
 @testable import _SFSymbolsGeneratorCore
 
 enum GeneratorTestContext {
-	static func make(
+	static func make<Output: DiagnosticOutput>(
 		outputDirectory: URL,
 		uiFrameworks: Set<UIFramework> = [],
 		rawIdentifiers: Bool = false,
-	) throws -> CodeGenerator.SymbolContext<TestDiagnosticCollector> {
+		diagnosticOutput: Output = TestDiagnosticOutput(),
+	) throws -> CodeGenerator.SymbolContext<Output> {
 		try writePlist(
 			[
 				"symbols": ["circle.fill": "unmapped-year"],
@@ -25,10 +26,14 @@ enum GeneratorTestContext {
 		try writePlist(["circle.fill": ["shapes"]], named: "symbol_categories.plist", to: outputDirectory)
 
 		let metadata = try SFSymbolMetadata(resourceFolder: outputDirectory)
-		return CodeGenerator.SymbolContext(
-			context: CodeGenerator.Context(
+		return CodeGenerator.SymbolContext<Output>(
+			context: CodeGenerator.Context<Output>(
 				outputDirectory: outputDirectory,
-				diagnostics: TestDiagnosticCollector(),
+				diagnostics: DiagnosticCollector<Output>(
+					mode: .xcode,
+					verbose: true,
+					output: diagnosticOutput
+				),
 				accessModifier: .public,
 				symbolExtensions: true,
 				uiFrameworks: uiFrameworks,

@@ -96,7 +96,7 @@ import SwiftStructureKitTestSupport
 	func generateResourceFile(
 		in directory: URL,
 		using codeGenerator: CodeGenerator,
-		using context: CodeGenerator.SymbolContext<TestDiagnosticCollector>
+		using context: CodeGenerator.SymbolContext<TestDiagnosticOutput>
 	) throws -> URL {
 		let resourceFile = SFSymbolResourceFile.generate(
 			fileName: "SFSymbolResource.generated.swift",
@@ -111,7 +111,7 @@ import SwiftStructureKitTestSupport
 		_ symbols: [SFSymbol],
 		in directory: URL,
 		using codeGenerator: CodeGenerator,
-		using context: CodeGenerator.SymbolContext<TestDiagnosticCollector>,
+		using context: CodeGenerator.SymbolContext<TestDiagnosticOutput>,
 	) throws -> URL {
 		let definitionsFile = SFSymbolDefinitionsFile.generate(
 			symbols,

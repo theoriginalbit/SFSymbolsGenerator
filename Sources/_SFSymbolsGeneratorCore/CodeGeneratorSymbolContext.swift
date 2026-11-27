@@ -7,19 +7,19 @@ import Foundation
 extension CodeGenerator {
 	/// Context required to generate files in addition to the Context supplied by the command.
 	@dynamicMemberLookup
-	struct SymbolContext<Diagnostics: DiagnosticCollector> {
+	struct SymbolContext<Output: DiagnosticOutput> {
 
-		let context: Context<Diagnostics>
+		let context: Context<Output>
 		let metadata: SFSymbolMetadata
 		let fileURLProvider: FileURLProvider
 
-		init(context: Context<Diagnostics>, metadata: SFSymbolMetadata) {
+		init(context: Context<Output>, metadata: SFSymbolMetadata) {
 			self.context = context
 			self.metadata = metadata
 			self.fileURLProvider = FileURLProvider(outputDirectory: context.outputDirectory)
 		}
 
-		subscript<T>(dynamicMember keyPath: KeyPath<Context<Diagnostics>, T>) -> T {
+		subscript<T>(dynamicMember keyPath: KeyPath<Context<Output>, T>) -> T {
 			context[keyPath: keyPath]
 		}
 
@@ -63,25 +63,20 @@ extension CodeGenerator {
 
 		// MARK: Diagnostics conveniences
 
-		func note(_ message: String, location: SourceLocation? = nil) {
-			context.diagnostics.note(message, location: location)
+		func note(_ message: DiagnosticMessage, at location: SourceLocation? = nil) {
+			context.diagnostics.note(message, at: location)
 		}
 
-		func info(_ message: String, location: SourceLocation? = nil) {
-			context.diagnostics.info(message, location: location)
+		func warning(_ message: DiagnosticMessage, at location: SourceLocation? = nil) {
+			context.diagnostics.warning(message, at: location)
 		}
 
-		func warning(_ message: String, location: SourceLocation? = nil) {
-			context.diagnostics.warning(message, location: location)
+		func error(_ message: DiagnosticMessage, location: SourceLocation? = nil) {
+			context.diagnostics.error(message, at: location)
 		}
 
-		func error(_ message: String, location: SourceLocation? = nil) {
-			context.diagnostics.error(message, location: location)
-		}
-
-		/// - Important: Emitting a fault will output the diagnostic and immediately exit the process
-		func fault(_ message: String, location: SourceLocation? = nil) {
-			context.diagnostics.fault(message, location: location)
+		func fault(_ message: DiagnosticMessage, location: SourceLocation? = nil, exitCode: Int32 = EXIT_FAILURE) -> Never {
+			context.diagnostics.fault(message, at: location)
 		}
 	}
 }

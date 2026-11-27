@@ -7,11 +7,15 @@ import ArgumentParser
 
 extension DiagnosticMode: ExpressibleByArgument {
 	package init?(argument: String) {
-		self.init(rawValue: argument)
+		switch argument.lowercased() {
+		case "xcode": self = .xcode
+		case "cli": self = .cli()
+		default: return nil
+		}
 	}
 
 	package static var allValueStrings: [String] {
-		allCases.map(\.rawValue)
+		["xcode", "cli"]
 	}
 
 	package static var allValueDescriptions: [String : String] {

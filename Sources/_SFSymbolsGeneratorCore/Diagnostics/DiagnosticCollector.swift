@@ -2,35 +2,47 @@
 // Copyright © 2026 SFSymbolsGenerator. All rights reserved.
 //
 
-import struct Foundation.Data
-import class Foundation.FileHandle
+import Foundation
+import Synchronization
 
-package enum DiagnosticMode: String, CaseIterable {
-	case cli
-	case xcode
+package enum DiagnosticSeverity {
+	case error
+	case warning
+	case note
 }
 
-package protocol DiagnosticCollector {
-	var mode: DiagnosticMode { get }
-	var verbosity: Diagnostic.Severity { get }
-	var hasErrors: Bool { get }
-	func emit(_ diagnostic: Diagnostic)
-	func describe(_ diagnostic: Diagnostic) -> String
-}
-
-package extension DiagnosticCollector {
-	func canEmit(_ diagnostic: Diagnostic) -> Bool {
-		diagnostic.severity <= verbosity
+package struct DiagnosticCollector<Output: DiagnosticOutput> {
+	final class MutableState: Sendable {
+		let hasErrors = Atomic<Bool>(false)
 	}
 
-	func describe(_ diagnostic: Diagnostic) -> String {
+	package let mode: DiagnosticMode
+	package let verbose: Bool
+
+	private let state = MutableState()
+	package private(set) var hasErrors: Bool {
+		get { state.hasErrors.load(ordering: .relaxed) }
+		nonmutating set { state.hasErrors.store(newValue, ordering: .relaxed) }
+	}
+
+	private let output: Output
+
+	init(mode: DiagnosticMode, verbose: Bool, output: Output) {
+		self.mode = mode
+		self.verbose = verbose
+		self.output = output
+	}
+
+	package init(mode: DiagnosticMode, verbose: Bool) where Output == FileHandleOutput {
+		self.mode = mode
+		self.verbose = verbose
+		self.output = FileHandleOutput(.standardError)
+	}
+
+	func render(_ severity: DiagnosticSeverity, _ message: DiagnosticMessage, _ location: SourceLocation?) -> String {
 		var prefix = ""
-		if let location = diagnostic.location {
-			let filePath = switch mode {
-			case .cli: location.file.lastPathComponent
-			case .xcode: location.file.path(percentEncoded: false)
-			}
-			prefix = "\(filePath):"
+		if let location {
+			prefix = "\(mode.path(for: location.file)):"
 			if let line = location.line {
 				prefix += "\(line):"
 				if let column = location.column {
@@ -39,42 +51,48 @@ package extension DiagnosticCollector {
 			}
 			prefix += " "
 		}
-		let severity = switch diagnostic.severity {
-		case .fault where mode == .xcode: "error"
-		case .fault: "fault"
-		case .error: "error"
-		case .warning: "warning"
-		case .note: "note"
-		case .info where mode == .xcode: "note"
-		case .info: "info"
+		return "\(prefix)\(mode.severity(severity)) \(message.render(for: mode))"
+	}
+
+	package func emit(_ severity: DiagnosticSeverity, _ message: DiagnosticMessage, at location: SourceLocation? = nil) {
+		if severity == .note, !verbose {
+			return
 		}
-		return "\(prefix)\(severity): \(diagnostic.message)"
+		output.writeLine(render(severity, message, location))
 	}
 
-	func note(_ message: String, location: SourceLocation? = nil) {
-		self.emit(.note(message, location: location))
+	package func note(_ message: DiagnosticMessage, at location: SourceLocation? = nil) {
+		emit(.note, message, at: location)
 	}
 
-	func info(_ message: String, location: SourceLocation? = nil) {
-		self.emit(.info(message, location: location))
+	package func warning(_ message: DiagnosticMessage, at location: SourceLocation? = nil) {
+		emit(.warning, message, at: location)
 	}
 
-	func warning(_ message: String, location: SourceLocation? = nil) {
-		self.emit(.warning(message, location: location))
+	package func error(_ message: DiagnosticMessage, at location: SourceLocation? = nil) {
+		emit(.error, message, at: location)
+		hasErrors = true
 	}
 
-	func error(_ message: String, location: SourceLocation? = nil) {
-		self.emit(.error(message, location: location))
-	}
-
-	/// - Important: Emitting a fault will output the diagnostic and immediately exit the process
-	func fault(_ message: String, location: SourceLocation? = nil) {
-		self.emit(.fault(message, location: location))
+	package func fault(_ message: DiagnosticMessage, at location: SourceLocation? = nil, exitCode: Int32 = EXIT_FAILURE) -> Never {
+		emit(.error, message, at: location)
+		hasErrors = true
+		exit(exitCode)
 	}
 }
 
-package protocol DiagnosticOutputHandle: Sendable {
-	func write(_ data: Data)
+package protocol DiagnosticOutput {
+	func writeLine(_ line: String)
 }
 
-extension FileHandle: DiagnosticOutputHandle {}
+package struct FileHandleOutput: DiagnosticOutput {
+	private let handle: FileHandle
+
+	package init(_ handle: FileHandle) {
+		self.handle = handle
+	}
+
+	public func writeLine(_ line: String) {
+		handle.write(Data((line + "\n").utf8))
+	}
+}

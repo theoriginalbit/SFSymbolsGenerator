@@ -31,7 +31,7 @@ enum CommonFile {
 
 	static func propertyAttributes(
 		for symbol: SFSymbol,
-		using context: CodeGenerator.SymbolContext<some DiagnosticCollector>,
+		using context: CodeGenerator.SymbolContext<some DiagnosticOutput>,
 	) -> [AttributeDescriptor] {
 		if let attributes = deprecatedAvailabilityAttributes(for: symbol, using: context) {
 			return attributes
@@ -69,7 +69,7 @@ enum CommonFile {
 
 	private static func deprecatedAvailabilityAttributes(
 		for symbol: SFSymbol,
-		using context: CodeGenerator.SymbolContext<some DiagnosticCollector>,
+		using context: CodeGenerator.SymbolContext<some DiagnosticOutput>,
 	) -> [AttributeDescriptor]? {
 		guard let replacementName = symbol.replacementName else { return nil }
 
